@@ -76,7 +76,7 @@ npm install -g @expo/cli eas-cli
 ### **Setup**
 ```bash
 # 1. Clone repository
-git clone https://github.com/yourusername/expense-tracker-app.git
+git clone https://github.com/HarshKuro/Broku-frontend.git
 cd expense-tracker-app/client
 
 # 2. Install dependencies
