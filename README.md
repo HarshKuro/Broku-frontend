@@ -688,26 +688,6 @@ detox test
 - [ ] 🔐 **Security Enhancements** - Biometric authentication
 - [ ] 📦 **Code Splitting** - Lazy loading for better performance
 
-## 🤝 Contributing
-
-### **Development Setup**
-```bash
-# 1. Fork the repository
-git clone https://github.com/yourusername/expense-tracker-app.git
-cd expense-tracker-app/client
-
-# 2. Create feature branch
-git checkout -b feature/amazing-feature
-
-# 3. Install dependencies
-npm install
-
-# 4. Start development
-npx expo start
-
-# 5. Make changes and test
-# 6. Submit pull request
-```
 
 ### **Code Style Guidelines**
 - 📝 **TypeScript** - Use strict typing
