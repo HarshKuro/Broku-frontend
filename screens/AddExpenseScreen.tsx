@@ -18,6 +18,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, ExpenseFormData } from '../types/types';
 import { expenseApi } from '../api/expenseApi';
 import CategorySelector from '../components/CategorySelector';
+import { useTheme, useThemedStyles } from '../constants/ThemeProvider';
 
 type AddExpenseScreenNavigationProp = StackNavigationProp<RootStackParamList, 'AddExpense'>;
 
@@ -26,6 +27,8 @@ interface Props {
 }
 
 const AddExpenseScreen: React.FC<Props> = ({ navigation }) => {
+  const { colors } = useTheme();
+  const themedStyles = useThemedStyles();
   const [formData, setFormData] = useState<ExpenseFormData>({
     category: '',
     amount: '',
@@ -136,6 +139,91 @@ const AddExpenseScreen: React.FC<Props> = ({ navigation }) => {
     setShowDatePicker(true);
   };
 
+  // Create styles inside component to access theme
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    card: {
+      margin: themedStyles.spacing.lg,
+      backgroundColor: colors.surface,
+      borderRadius: themedStyles.borderRadius.md,
+      ...themedStyles.shadows.level1,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: colors.text.primary,
+      marginBottom: themedStyles.spacing.xl,
+      textAlign: 'center',
+    },
+    section: {
+      marginBottom: themedStyles.spacing.xl,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text.primary,
+      marginBottom: themedStyles.spacing.sm,
+    },
+    input: {
+      backgroundColor: colors.surface,
+      marginBottom: themedStyles.spacing.sm,
+    },
+    amountContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: themedStyles.spacing.sm,
+    },
+    currencySymbol: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: colors.accent,
+      marginRight: themedStyles.spacing.sm,
+      marginTop: themedStyles.spacing.sm,
+    },
+    amountInput: {
+      flex: 1,
+      backgroundColor: colors.surface,
+    },
+    dateButton: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: themedStyles.borderRadius.sm,
+      padding: themedStyles.spacing.md,
+      backgroundColor: colors.surface,
+      marginBottom: themedStyles.spacing.sm,
+    },
+    dateText: {
+      fontSize: 16,
+      color: colors.text.primary,
+    },
+    datePlaceholder: {
+      fontSize: 16,
+      color: colors.text.disabled,
+    },
+    errorText: {
+      color: colors.error,
+      fontSize: 12,
+      marginBottom: themedStyles.spacing.md,
+      marginLeft: 4,
+    },
+    submitButton: {
+      marginBottom: themedStyles.spacing.md,
+      paddingVertical: themedStyles.spacing.sm,
+      backgroundColor: colors.primary,
+      borderRadius: themedStyles.borderRadius.md,
+    },
+    submitButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    cancelButton: {
+      marginBottom: themedStyles.spacing.sm,
+    },
+  });
+
   return (
     <ScrollView style={styles.container}>
       <Card style={styles.card} mode="outlined">
@@ -157,7 +245,7 @@ const AddExpenseScreen: React.FC<Props> = ({ navigation }) => {
           {/* Amount Input */}
           <View style={styles.section}>
             <TextInput
-              label="Amount ($)"
+              label="Amount (₹)"
               value={formData.amount}
               onChangeText={handleAmountChange}
               mode="outlined"
@@ -236,48 +324,5 @@ const AddExpenseScreen: React.FC<Props> = ({ navigation }) => {
     </ScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  card: {
-    margin: 16,
-    backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  section: {
-    marginBottom: 20,
-  },
-  input: {
-    backgroundColor: '#fff',
-  },
-  errorText: {
-    color: '#e74c3c',
-    fontSize: 12,
-    marginTop: 4,
-    marginLeft: 4,
-  },
-  submitButton: {
-    marginTop: 16,
-    marginBottom: 12,
-    paddingVertical: 8,
-    backgroundColor: '#6200ee',
-  },
-  submitButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  cancelButton: {
-    marginBottom: 8,
-  },
-});
 
 export default AddExpenseScreen;

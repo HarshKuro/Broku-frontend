@@ -14,6 +14,8 @@ import { PieChart, BarChart } from 'react-native-chart-kit';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, MonthlySummary } from '../types/types';
 import { expenseApi } from '../api/expenseApi';
+import { formatCurrency } from '../utils/currency';
+import { useTheme, useThemedStyles } from '../constants/ThemeProvider';
 
 type SummaryScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Summary'>;
 
@@ -22,6 +24,8 @@ interface Props {
 }
 
 const SummaryScreen: React.FC<Props> = ({ navigation }) => {
+  const { colors, isDark } = useTheme();
+  const themedStyles = useThemedStyles();
   const [summary, setSummary] = useState<MonthlySummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -55,8 +59,8 @@ const SummaryScreen: React.FC<Props> = ({ navigation }) => {
     setRefreshing(false);
   };
 
-  const formatCurrency = (amount: number) => {
-    return `$${amount.toFixed(2)}`;
+  const formatCurrencyLocal = (amount: number) => {
+    return formatCurrency(amount);
   };
 
   const getMonthName = (month: number, year: number) => {
@@ -103,34 +107,186 @@ const SummaryScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const chartConfig = {
-    backgroundColor: '#ffffff',
-    backgroundGradientFrom: '#ffffff',
-    backgroundGradientTo: '#ffffff',
+    backgroundColor: colors.surface,
+    backgroundGradientFrom: colors.surface,
+    backgroundGradientTo: colors.surface,
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(98, 0, 238, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(51, 51, 51, ${opacity})`,
+    color: (opacity = 1) => `rgba(76, 126, 255, ${opacity})`, // Primary blue with opacity
+    labelColor: (opacity = 1) => isDark 
+      ? `rgba(242, 242, 242, ${opacity})` // Light text for dark mode
+      : `rgba(30, 30, 30, ${opacity})`, // Dark text for light mode
     style: {
-      borderRadius: 16,
+      borderRadius: themedStyles.borderRadius.lg,
     },
     propsForDots: {
       r: '6',
       strokeWidth: '2',
-      stroke: '#6200ee',
+      stroke: colors.primary,
     },
   };
 
   function getColorForIndex(index: number): string {
-    const colors = [
-      '#6200ee', '#e74c3c', '#f39c12', '#27ae60', '#3498db',
-      '#9b59b6', '#e67e22', '#1abc9c', '#34495e', '#f1c40f'
+    const chartColors = [
+      colors.primary,    // #4C7EFF - blue
+      colors.accent,     // #FFA657 - orange
+      colors.error,      // #EF4444 - red
+      colors.success,    // #10B981 - green
+      colors.warning,    // #F59E0B - amber
+      '#9B59B6',         // purple
+      '#E67E22',         // dark orange
+      '#1ABC9C',         // teal
+      '#34495E',         // dark gray
+      '#F1C40F'          // yellow
     ];
-    return colors[index % colors.length];
+    return chartColors[index % chartColors.length];
   }
+
+  // Create styles inside component to access theme
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    navigationCard: {
+      margin: themedStyles.spacing.lg,
+      backgroundColor: colors.surface,
+      borderRadius: themedStyles.borderRadius.md,
+      ...themedStyles.shadows.level1,
+    },
+    monthNavigation: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    monthTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: colors.text.primary,
+    },
+    overviewCard: {
+      marginHorizontal: themedStyles.spacing.lg,
+      marginBottom: themedStyles.spacing.lg,
+      backgroundColor: colors.surface,
+      borderRadius: themedStyles.borderRadius.md,
+      ...themedStyles.shadows.level1,
+    },
+    cardTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: colors.text.primary,
+      marginBottom: themedStyles.spacing.lg,
+    },
+    overviewGrid: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    overviewItem: {
+      alignItems: 'center',
+      flex: 1,
+    },
+    overviewLabel: {
+      fontSize: 14,
+      color: colors.text.secondary,
+      marginBottom: 4,
+    },
+    overviewValue: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: colors.accent,
+    },
+    divider: {
+      marginVertical: themedStyles.spacing.lg,
+    },
+    chartCard: {
+      marginHorizontal: themedStyles.spacing.lg,
+      marginBottom: themedStyles.spacing.lg,
+      backgroundColor: colors.surface,
+      borderRadius: themedStyles.borderRadius.md,
+      ...themedStyles.shadows.level1,
+    },
+    breakdownCard: {
+      marginHorizontal: themedStyles.spacing.lg,
+      marginBottom: themedStyles.spacing.lg,
+      backgroundColor: colors.surface,
+      borderRadius: themedStyles.borderRadius.md,
+      ...themedStyles.shadows.level1,
+    },
+    categoryItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: themedStyles.spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    categoryLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+    },
+    categoryColor: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      marginRight: themedStyles.spacing.md,
+    },
+    categoryName: {
+      fontSize: 16,
+      color: colors.text.primary,
+      flex: 1,
+    },
+    categoryRight: {
+      alignItems: 'flex-end',
+    },
+    categoryAmount: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.accent,
+    },
+    categoryCount: {
+      fontSize: 12,
+      color: colors.text.secondary,
+      marginTop: 2,
+    },
+    categoryPercentage: {
+      fontSize: 12,
+      color: colors.text.secondary,
+      marginTop: 2,
+    },
+    emptyCard: {
+      marginHorizontal: themedStyles.spacing.lg,
+      marginTop: themedStyles.spacing.xxl,
+      backgroundColor: colors.surface,
+      borderRadius: themedStyles.borderRadius.md,
+      ...themedStyles.shadows.level1,
+    },
+    emptyText: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text.secondary,
+      textAlign: 'center',
+      marginBottom: themedStyles.spacing.sm,
+    },
+    emptySubtext: {
+      fontSize: 14,
+      color: colors.text.disabled,
+      textAlign: 'center',
+      marginBottom: themedStyles.spacing.xl,
+    },
+    emptyButton: {
+      alignSelf: 'center',
+    },
+  });
 
   if (loading && !summary) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>Loading summary...</Text>
+        <Text style={{ color: colors.text.primary }}>Loading summary...</Text>
       </View>
     );
   }
@@ -173,7 +329,7 @@ const SummaryScreen: React.FC<Props> = ({ navigation }) => {
             <View style={styles.overviewItem}>
               <Text style={styles.overviewLabel}>Total Spent</Text>
               <Text style={styles.overviewValue}>
-                {formatCurrency(summary?.total?.total || 0)}
+                {formatCurrencyLocal(summary?.total?.total || 0)}
               </Text>
             </View>
             <View style={styles.overviewItem}>
@@ -187,7 +343,7 @@ const SummaryScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.overviewItem}>
             <Text style={styles.overviewLabel}>Average per Transaction</Text>
             <Text style={styles.overviewValue}>
-              {formatCurrency(
+              {formatCurrencyLocal(
                 summary?.total?.count 
                   ? (summary.total.total / summary.total.count)
                   : 0
@@ -229,7 +385,7 @@ const SummaryScreen: React.FC<Props> = ({ navigation }) => {
                   height={220}
                   chartConfig={chartConfig}
                   verticalLabelRotation={30}
-                  yAxisLabel="$"
+                  yAxisLabel="₹"
                   yAxisSuffix=""
                   showValuesOnTopOfBars
                   fromZero
@@ -255,7 +411,7 @@ const SummaryScreen: React.FC<Props> = ({ navigation }) => {
                   </View>
                   <View style={styles.categoryRight}>
                     <Text style={styles.categoryAmount}>
-                      {formatCurrency(item.totalAmount)}
+                      {formatCurrencyLocal(item.totalAmount)}
                     </Text>
                     <Text style={styles.categoryCount}>
                       {item.count} transaction{item.count !== 1 ? 's' : ''}
@@ -289,136 +445,5 @@ const SummaryScreen: React.FC<Props> = ({ navigation }) => {
     </ScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  navigationCard: {
-    margin: 16,
-    backgroundColor: '#fff',
-  },
-  monthNavigation: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  monthTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  overviewCard: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-    backgroundColor: '#fff',
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 16,
-  },
-  overviewGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  overviewItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  overviewLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  overviewValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#e74c3c',
-  },
-  divider: {
-    marginVertical: 16,
-  },
-  chartCard: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-    backgroundColor: '#fff',
-  },
-  breakdownCard: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-    backgroundColor: '#fff',
-  },
-  categoryItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  categoryLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  categoryColor: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 12,
-  },
-  categoryName: {
-    fontSize: 16,
-    color: '#333',
-    flex: 1,
-  },
-  categoryRight: {
-    alignItems: 'flex-end',
-  },
-  categoryAmount: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#e74c3c',
-  },
-  categoryCount: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2,
-  },
-  categoryPercentage: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2,
-  },
-  emptyCard: {
-    marginHorizontal: 16,
-    marginTop: 40,
-    backgroundColor: '#fff',
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#999',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  emptyButton: {
-    alignSelf: 'center',
-  },
-});
 
 export default SummaryScreen;

@@ -16,6 +16,7 @@ import {
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Category } from '../types/types';
 import { categoryApi } from '../api/expenseApi';
+import { useTheme, useThemedStyles } from '../constants/ThemeProvider';
 
 type AddCategoryScreenNavigationProp = StackNavigationProp<RootStackParamList, 'AddCategory'>;
 
@@ -24,6 +25,8 @@ interface Props {
 }
 
 const AddCategoryScreen: React.FC<Props> = ({ navigation }) => {
+  const { colors } = useTheme();
+  const themedStyles = useThemedStyles();
   const [categoryName, setCategoryName] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
@@ -158,6 +161,105 @@ const AddCategoryScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  // Create styles inside component to access theme
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    formCard: {
+      margin: themedStyles.spacing.lg,
+      backgroundColor: colors.surface,
+      borderRadius: themedStyles.borderRadius.lg,
+      ...themedStyles.shadows.level2,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: colors.text.primary,
+      marginBottom: themedStyles.spacing.xl,
+      textAlign: 'center',
+    },
+    input: {
+      backgroundColor: colors.surface,
+      marginBottom: themedStyles.spacing.sm,
+    },
+    errorText: {
+      color: colors.error,
+      fontSize: 12,
+      marginBottom: themedStyles.spacing.lg,
+      marginLeft: 4,
+    },
+    addButton: {
+      marginBottom: themedStyles.spacing.md,
+      paddingVertical: themedStyles.spacing.sm,
+      backgroundColor: colors.primary,
+      borderRadius: themedStyles.borderRadius.md,
+    },
+    addButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    cancelButton: {
+      marginBottom: themedStyles.spacing.sm,
+    },
+    divider: {
+      marginHorizontal: themedStyles.spacing.lg,
+      marginVertical: themedStyles.spacing.sm,
+    },
+    categoriesSection: {
+      flex: 1,
+      marginHorizontal: themedStyles.spacing.lg,
+      marginBottom: themedStyles.spacing.lg,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: colors.text.primary,
+      marginBottom: themedStyles.spacing.md,
+    },
+    categoryCard: {
+      marginBottom: themedStyles.spacing.sm,
+      backgroundColor: colors.surface,
+      borderRadius: themedStyles.borderRadius.md,
+      ...themedStyles.shadows.level1,
+    },
+    categoryRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    categoryName: {
+      fontSize: 16,
+      color: colors.text.primary,
+      flex: 1,
+    },
+    deleteButton: {
+      margin: 0,
+    },
+    emptyCard: {
+      backgroundColor: colors.surface,
+      marginTop: themedStyles.spacing.xl,
+      borderRadius: themedStyles.borderRadius.md,
+      ...themedStyles.shadows.level1,
+    },
+    emptyText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text.secondary,
+      textAlign: 'center',
+      marginBottom: themedStyles.spacing.sm,
+    },
+    emptySubtext: {
+      fontSize: 14,
+      color: colors.text.disabled,
+      textAlign: 'center',
+    },
+    listContent: {
+      paddingBottom: themedStyles.spacing.xl,
+    },
+  });
+
   return (
     <View style={styles.container}>
       {/* Add Category Form */}
@@ -232,96 +334,5 @@ const AddCategoryScreen: React.FC<Props> = ({ navigation }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  formCard: {
-    margin: 16,
-    backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  input: {
-    backgroundColor: '#fff',
-    marginBottom: 8,
-  },
-  errorText: {
-    color: '#e74c3c',
-    fontSize: 12,
-    marginBottom: 16,
-    marginLeft: 4,
-  },
-  addButton: {
-    marginBottom: 12,
-    paddingVertical: 8,
-    backgroundColor: '#6200ee',
-  },
-  addButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  cancelButton: {
-    marginBottom: 8,
-  },
-  divider: {
-    marginHorizontal: 16,
-    marginVertical: 8,
-  },
-  categoriesSection: {
-    flex: 1,
-    marginHorizontal: 16,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 12,
-  },
-  categoryCard: {
-    marginBottom: 8,
-    backgroundColor: '#fff',
-  },
-  categoryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  categoryName: {
-    fontSize: 16,
-    color: '#333',
-    flex: 1,
-  },
-  deleteButton: {
-    margin: 0,
-  },
-  emptyCard: {
-    backgroundColor: '#fff',
-    marginTop: 20,
-  },
-  emptyText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#999',
-    textAlign: 'center',
-  },
-  listContent: {
-    paddingBottom: 20,
-  },
-});
 
 export default AddCategoryScreen;

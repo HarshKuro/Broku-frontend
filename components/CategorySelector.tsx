@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { Button, Chip } from 'react-native-paper';
 import { Category } from '../types/types';
 import { categoryApi } from '../api/expenseApi';
+import { theme } from '../constants/theme';
 
 interface CategorySelectorProps {
   selectedCategory: string;
@@ -91,59 +92,63 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 16,
+    marginVertical: theme.spacing.lg,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
-    paddingHorizontal: 16,
+    marginBottom: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
   },
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: theme.colors.text.primary,
   },
   addButton: {
     marginRight: -8,
   },
   addButtonLabel: {
     fontSize: 12,
-    color: '#6200ee',
+    color: theme.colors.primary,
   },
   scrollView: {
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   scrollContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: theme.spacing.lg,
     paddingVertical: 4,
   },
   chip: {
-    marginRight: 8,
-    backgroundColor: '#f5f5f5',
+    marginRight: theme.spacing.sm,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.full,
+    ...theme.shadows.level1,
   },
   selectedChip: {
-    backgroundColor: '#6200ee',
+    backgroundColor: theme.colors.primary,
   },
   chipText: {
-    color: '#333',
+    color: theme.colors.text.primary,
   },
   selectedChipText: {
-    color: '#fff',
+    color: theme.colors.surface,
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 20,
-    paddingHorizontal: 16,
+    paddingVertical: theme.spacing.xl,
+    paddingHorizontal: theme.spacing.lg,
   },
   emptyText: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing.md,
   },
   emptyButton: {
-    marginTop: 8,
+    marginTop: theme.spacing.sm,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.md,
   },
 });
 

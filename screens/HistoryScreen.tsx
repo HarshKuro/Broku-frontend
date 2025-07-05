@@ -6,13 +6,16 @@ import {
   FlatList,
   RefreshControl,
   Alert,
+  TextInput,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { Searchbar, Button, Card, FAB } from 'react-native-paper';
+import { Button, Card, FAB } from 'react-native-paper';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Expense } from '../types/types';
 import { expenseApi } from '../api/expenseApi';
 import ExpenseCard from '../components/ExpenseCard';
+import { formatCurrency } from '../utils/currency';
+import { useTheme, useThemedStyles } from '../constants/ThemeProvider';
 
 type HistoryScreenNavigationProp = StackNavigationProp<RootStackParamList, 'History'>;
 
@@ -21,6 +24,8 @@ interface Props {
 }
 
 const HistoryScreen: React.FC<Props> = ({ navigation }) => {
+  const { colors } = useTheme();
+  const themedStyles = useThemedStyles();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [filteredExpenses, setFilteredExpenses] = useState<Expense[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -124,8 +129,8 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
     return filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
   };
 
-  const formatCurrency = (amount: number) => {
-    return `$${amount.toFixed(2)}`;
+  const formatCurrencyLocal = (amount: number) => {
+    return formatCurrency(amount);
   };
 
   const getFilterText = () => {
@@ -136,6 +141,94 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
     return 'All Time';
   };
 
+  // Create styles inside component to access theme
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    listContent: {
+      paddingBottom: 80,
+    },
+    header: {
+      padding: 16,
+      paddingBottom: 8,
+    },
+    searchContainer: {
+      marginBottom: themedStyles.spacing.md,
+    },
+    searchBar: {
+      backgroundColor: colors.surface,
+      borderRadius: themedStyles.borderRadius.md,
+      padding: themedStyles.spacing.md,
+      fontSize: 16,
+      color: colors.text.primary,
+      elevation: 0,
+      shadowOpacity: 0,
+    },
+    searchInput: {
+      color: colors.text.primary,
+    },
+    filterRow: {
+      flexDirection: 'row',
+      marginBottom: themedStyles.spacing.md,
+    },
+    filterButton: {
+      marginRight: themedStyles.spacing.sm,
+    },
+    summaryCard: {
+      backgroundColor: colors.surface,
+      marginBottom: themedStyles.spacing.sm,
+      borderRadius: themedStyles.borderRadius.md,
+    },
+    summaryRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    summaryLabel: {
+      fontSize: 14,
+      color: colors.text.secondary,
+      marginBottom: 2,
+    },
+    summaryRight: {
+      alignItems: 'flex-end',
+    },
+    summaryAmount: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: colors.error,
+    },
+    emptyState: {
+      alignItems: 'center',
+      paddingVertical: 40,
+      paddingHorizontal: 20,
+    },
+    emptyText: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text.secondary,
+      marginBottom: 8,
+      textAlign: 'center',
+    },
+    emptySubtext: {
+      fontSize: 14,
+      color: colors.text.disabled,
+      textAlign: 'center',
+      marginBottom: 20,
+    },
+    emptyButton: {
+      marginTop: 8,
+    },
+    fab: {
+      position: 'absolute',
+      margin: 16,
+      right: 0,
+      bottom: 0,
+      backgroundColor: colors.primary,
+    },
+  });
+
   const renderExpenseItem = ({ item }: { item: Expense }) => (
     <ExpenseCard expense={item} onDelete={handleDeleteExpense} />
   );
@@ -143,12 +236,15 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
   const renderHeader = () => (
     <View style={styles.header}>
       {/* Search Bar */}
-      <Searchbar
-        placeholder="Search by category or note..."
-        onChangeText={handleSearch}
-        value={searchQuery}
-        style={styles.searchBar}
-      />
+      <View style={styles.searchContainer}>
+        <TextInput
+          placeholder="Search by category or note..."
+          onChangeText={handleSearch}
+          value={searchQuery}
+          style={styles.searchBar}
+          placeholderTextColor={colors.text.disabled}
+        />
+      </View>
 
       {/* Filter Buttons */}
       <View style={styles.filterRow}>
@@ -179,7 +275,7 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
               </Text>
             </View>
             <View style={styles.summaryRight}>
-              <Text style={styles.summaryAmount}>{formatCurrency(getTotalAmount())}</Text>
+              <Text style={styles.summaryAmount}>{formatCurrencyLocal(getTotalAmount())}</Text>
             </View>
           </View>
         </Card.Content>
@@ -235,80 +331,5 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  listContent: {
-    paddingBottom: 80,
-  },
-  header: {
-    padding: 16,
-    paddingBottom: 8,
-  },
-  searchBar: {
-    marginBottom: 12,
-    backgroundColor: '#fff',
-  },
-  filterRow: {
-    flexDirection: 'row',
-    marginBottom: 12,
-  },
-  filterButton: {
-    marginRight: 8,
-  },
-  summaryCard: {
-    backgroundColor: '#fff',
-    marginBottom: 8,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  summaryLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 2,
-  },
-  summaryRight: {
-    alignItems: 'flex-end',
-  },
-  summaryAmount: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#e74c3c',
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#999',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  emptyButton: {
-    marginTop: 8,
-  },
-  fab: {
-    position: 'absolute',
-    margin: 16,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#6200ee',
-  },
-});
 
 export default HistoryScreen;

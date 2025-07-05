@@ -1,7 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { Card, IconButton } from 'react-native-paper';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Expense } from '../types/types';
+import { formatCurrency } from '../utils/currency';
+import { theme } from '../constants/theme';
 
 interface ExpenseCardProps {
   expense: Expense;
@@ -11,15 +13,11 @@ interface ExpenseCardProps {
 const ExpenseCard: React.FC<ExpenseCardProps> = ({ expense, onDelete }) => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString('en-IN', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
     });
-  };
-
-  const formatAmount = (amount: number) => {
-    return `$${amount.toFixed(2)}`;
   };
 
   const handleDelete = () => {
@@ -42,71 +40,111 @@ const ExpenseCard: React.FC<ExpenseCardProps> = ({ expense, onDelete }) => {
   };
 
   return (
-    <Card style={styles.card} mode="outlined">
-      <Card.Content>
-        <View style={styles.header}>
-          <View style={styles.leftContent}>
-            <Text style={styles.category}>{expense.category}</Text>
-            <Text style={styles.amount}>{formatAmount(expense.amount)}</Text>
+    <View style={styles.cardContainer}>
+      <LinearGradient
+        colors={['rgba(255, 255, 255, 0.9)', 'rgba(255, 255, 255, 0.8)']}
+        style={styles.gradientBackground}
+      >
+        <View style={styles.card}>
+          <View style={styles.leftSection}>
+            <View style={styles.categoryContainer}>
+              <View style={styles.categoryIndicator} />
+              <Text style={styles.category}>{expense.category}</Text>
+            </View>
+            <Text style={styles.amount}>{formatCurrency(expense.amount)}</Text>
+            {expense.note ? (
+              <Text style={styles.note} numberOfLines={2}>{expense.note}</Text>
+            ) : null}
           </View>
-          <View style={styles.rightContent}>
+          
+          <View style={styles.rightSection}>
             <Text style={styles.date}>{formatDate(expense.date)}</Text>
-            <IconButton
-              icon="delete"
-              size={20}
-              onPress={handleDelete}
+            <TouchableOpacity
               style={styles.deleteButton}
-            />
+              onPress={handleDelete}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.deleteIcon}>🗑️</Text>
+            </TouchableOpacity>
           </View>
         </View>
-        {expense.note ? (
-          <Text style={styles.note}>{expense.note}</Text>
-        ) : null}
-      </Card.Content>
-    </Card>
+      </LinearGradient>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  cardContainer: {
+    marginVertical: theme.spacing.xs,
+    marginHorizontal: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+    overflow: 'hidden',
+    ...theme.shadows.medium,
+  },
+  gradientBackground: {
+    borderRadius: theme.borderRadius.lg,
+  },
   card: {
-    marginVertical: 4,
-    marginHorizontal: 16,
-  },
-  header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.borderLight,
   },
-  leftContent: {
+  leftSection: {
     flex: 1,
+    marginRight: theme.spacing.md,
   },
-  rightContent: {
-    alignItems: 'flex-end',
+  categoryContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: theme.spacing.xs,
+  },
+  categoryIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: theme.borderRadius.full,
+    backgroundColor: theme.colors.primary,
+    marginRight: theme.spacing.sm,
   },
   category: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
+    ...theme.typography.body2,
+    color: theme.colors.text.secondary,
+    fontWeight: '500',
   },
   amount: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#e74c3c',
-    marginTop: 2,
-  },
-  date: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
+    ...theme.typography.h3,
+    color: theme.colors.primary,
+    fontWeight: '700',
+    marginBottom: theme.spacing.xs,
   },
   note: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 8,
+    ...theme.typography.caption,
+    color: theme.colors.text.disabled,
     fontStyle: 'italic',
+    lineHeight: 16,
+  },
+  rightSection: {
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    minHeight: 60,
+  },
+  date: {
+    ...theme.typography.caption,
+    color: theme.colors.text.disabled,
+    fontWeight: '500',
   },
   deleteButton: {
-    margin: 0,
+    width: 32,
+    height: 32,
+    borderRadius: theme.borderRadius.sm,
+    backgroundColor: theme.colors.errorLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: theme.spacing.sm,
+  },
+  deleteIcon: {
+    fontSize: 16,
   },
 });
 
