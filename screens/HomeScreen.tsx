@@ -15,6 +15,9 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Expense } from '../types/types';
 import { expenseApi, healthCheck } from '../api/expenseApi';
 import ExpenseCard from '../components/ExpenseCard';
+import SmartSummaryCard from '../components/SmartSummaryCard';
+import InsightCard from '../components/InsightCard';
+import InsightCarousel from '../components/InsightCarousel';
 import { formatCurrency, formatCurrencyCompact } from '../utils/currency';
 import { useTheme, useThemedStyles } from '../constants/ThemeProvider';
 
@@ -29,6 +32,8 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const themedStyles = useThemedStyles();
   const [recentExpenses, setRecentExpenses] = useState<Expense[]>([]);
   const [totalThisMonth, setTotalThisMonth] = useState(0);
+  const [monthlyIncome, setMonthlyIncome] = useState(0);
+  const [monthlyExpense, setMonthlyExpense] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [apiConnected, setApiConnected] = useState(false);
@@ -54,14 +59,21 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     try {
       setLoading(true);
       
-      // Fetch recent expenses (limit to 5)
+      // Fetch real analytics data for current month
+      const analyticsData = await expenseApi.getAnalytics('month');
+      
+      // Set real income and expense data
+      setMonthlyIncome(analyticsData.summary.income);
+      setMonthlyExpense(analyticsData.summary.expense);
+      
+      // Fetch recent expenses (all types, but filter display)
       const allExpenses = await expenseApi.getAll();
       const recent = allExpenses
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         .slice(0, 5);
       setRecentExpenses(recent);
 
-      // Calculate this month's total
+      // Calculate this month's total expenses only
       const currentDate = new Date();
       const currentMonth = currentDate.getMonth();
       const currentYear = currentDate.getFullYear();
@@ -69,7 +81,8 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       const thisMonthExpenses = allExpenses.filter(expense => {
         const expenseDate = new Date(expense.date);
         return expenseDate.getMonth() === currentMonth && 
-               expenseDate.getFullYear() === currentYear;
+               expenseDate.getFullYear() === currentYear &&
+               expense.type === 'expense'; // Only count expenses for the old total
       });
       
       const monthlyTotal = thisMonthExpenses.reduce((sum, expense) => sum + expense.amount, 0);
@@ -78,6 +91,11 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     } catch (error) {
       console.error('Error fetching home data:', error);
       Alert.alert('Error', 'Failed to fetch data. Please check your connection.');
+      
+      // Fallback to demo data
+      setMonthlyIncome(50000);
+      setMonthlyExpense(32000);
+      setTotalThisMonth(32000);
     } finally {
       setLoading(false);
     }
@@ -131,56 +149,37 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Monthly Summary */}
-        <View style={[styles.monthlyCard, { backgroundColor: colors.surface }]}>
-          <View style={styles.monthlyContent}>
-            <View style={styles.monthlyLeft}>
-              <Text style={[styles.monthlyLabel, { color: colors.text.secondary }]}>
-                This Month
-              </Text>
-              <Text style={[styles.monthlyAmount, { color: colors.accent }]}>
-                {formatCurrency(totalThisMonth)}
-              </Text>
-            </View>
-            
-            <View style={styles.monthlyStats}>
-              <Text style={[styles.sectionTitle, { fontSize: 32, color: colors.primary }]}>
-                📊
-              </Text>
-            </View>
-          </View>
-        </View>
-
         {/* Quick Actions */}
         <View style={styles.actionsGrid}>
           <View style={styles.actionsRow}>
             <TouchableOpacity
               onPress={() => navigation.navigate('AddExpense')}
-              style={[styles.actionButton, { backgroundColor: colors.primary, padding: 12, borderRadius: 12 }]}
+              style={[styles.actionButton, { backgroundColor: colors.error, padding: 12, borderRadius: 12 }]}
             >
-              <Text style={{ color: colors.surface, fontWeight: '600', textAlign: 'center' }}>➕ Add Expense</Text>
+              <Text style={{ color: colors.surface, fontWeight: '600', textAlign: 'center' }}>➖ Add Expense</Text>
             </TouchableOpacity>
             
+            <TouchableOpacity
+              onPress={() => navigation.navigate('AddIncome')}
+              style={[styles.actionButton, { backgroundColor: colors.success, padding: 12, borderRadius: 12 }]}
+            >
+              <Text style={{ color: colors.surface, fontWeight: '600', textAlign: 'center' }}>➕ Add Income</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.actionsRow}>
             <TouchableOpacity
               onPress={() => navigation.navigate('AddCategory')}
               style={[styles.actionButton, { backgroundColor: colors.accent, padding: 12, borderRadius: 12 }]}
             >
               <Text style={{ color: colors.surface, fontWeight: '600', textAlign: 'center' }}>🏷️ Categories</Text>
             </TouchableOpacity>
-          </View>
-          
-          <View style={styles.actionsRow}>
+            
             <TouchableOpacity
-              onPress={() => navigation.navigate('Summary')}
+              onPress={() => navigation.navigate('Analytics')}
               style={[styles.actionButton, { borderWidth: 2, borderColor: colors.primary, padding: 12, borderRadius: 12, backgroundColor: colors.surface }]}
             >
-              <Text style={{ color: colors.primary, fontWeight: '600', textAlign: 'center' }}>📊 View Summary</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('History')}
-              style={[styles.actionButton, { borderWidth: 2, borderColor: colors.primary, padding: 12, borderRadius: 12, backgroundColor: colors.surface }]}
-            >
-              <Text style={{ color: colors.primary, fontWeight: '600', textAlign: 'center' }}>📋 View History</Text>
+              <Text style={{ color: colors.primary, fontWeight: '600', textAlign: 'center' }}>� Analytics</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -235,10 +234,53 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       end={{ x: 1, y: 0 }}
     >
       <Text style={[styles.connectionText, { color: colors.surface }]}>
-        {apiConnected ? '✅ Connected to server' : '❌ Server disconnected'}
+        {apiConnected ? '✅ Premium User' : '❌ Free user - Limited features'}
       </Text>
     </LinearGradient>
   );
+
+  // Enhanced insights with categories
+  const income = monthlyIncome; // Use real data
+  const expense = monthlyExpense; // Use real data
+  
+  const insights = [
+    { 
+      icon: 'fast-food', 
+      message: 'Yesterday, you spent ₹120 on Snacks', 
+      color: '#EF4444',
+      category: 'daily' as const
+    },
+    { 
+      icon: 'wallet', 
+      message: 'You have ₹2,300 left this month based on your average spend', 
+      color: '#4C7EFF',
+      category: 'daily' as const
+    },
+    { 
+      icon: 'trending-up', 
+      message: 'Top spending category: Food (₹3,450)', 
+      color: '#EF4444',
+      category: 'weekly' as const
+    },
+    { 
+      icon: 'cash', 
+      message: 'You saved ₹1,200 compared to last month', 
+      color: '#22C55E',
+      category: 'weekly' as const
+    },
+    {
+      icon: 'card',
+      message: 'Consider setting up a monthly budget for dining out',
+      color: '#FFA657',
+      category: 'general' as const
+    },
+    {
+      icon: 'time',
+      message: 'Your weekend spending is 40% higher than weekdays',
+      color: '#A78BFA',
+      category: 'general' as const
+    }
+  ];
 
   const styles = StyleSheet.create({
     container: {
@@ -371,6 +413,32 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       bottom: 0,
       backgroundColor: colors.primary,
     },
+    insightsContainer: {
+      marginTop: themedStyles.spacing.md,
+      padding: themedStyles.spacing.lg,
+      borderRadius: themedStyles.borderRadius.md,
+      backgroundColor: colors.surface,
+      ...themedStyles.shadows.small,
+    },
+    insightCard: {
+      padding: themedStyles.spacing.md,
+      borderRadius: themedStyles.borderRadius.sm,
+      marginBottom: themedStyles.spacing.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    insightIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: themedStyles.spacing.sm,
+    },
+    insightMessage: {
+      flex: 1,
+      ...themedStyles.typography.body1,
+    },
   });
 
   return (
@@ -390,13 +458,20 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       >
         {renderHeader()}
         {renderConnectionStatus()}
+        {/* Smart Summary Card */}
+        <View style={[styles.monthlyCard, { backgroundColor: colors.surface }]}> 
+          <SmartSummaryCard income={income} expense={expense} />
+        </View>
+        {/* Insights Section */}
+        <InsightCarousel insights={insights} />
+
         {renderRecentExpenses()}
       </ScrollView>
 
+      {/* Floating Action Button */}
       <FAB
         style={styles.fab}
         icon="plus"
-        size="medium"
         onPress={() => navigation.navigate('AddExpense')}
       />
     </View>

@@ -7,9 +7,13 @@ import {
   RefreshControl,
   Alert,
   TextInput,
+  TouchableOpacity,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { Button, Card, FAB } from 'react-native-paper';
+import { Card, FAB } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Expense } from '../types/types';
 import { expenseApi } from '../api/expenseApi';
@@ -147,78 +151,146 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
       flex: 1,
       backgroundColor: colors.background,
     },
+    modernHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      backgroundColor: colors.background,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    headerTitle: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: colors.text.primary,
+    },
+    headerIcon: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 20,
+      backgroundColor: colors.surface,
+    },
     listContent: {
       paddingBottom: 80,
     },
     header: {
-      padding: 16,
-      paddingBottom: 8,
+      padding: 20,
+      paddingBottom: 12,
     },
     searchContainer: {
-      marginBottom: themedStyles.spacing.md,
+      marginBottom: 16,
+    },
+    searchWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    },
+    searchIcon: {
+      marginRight: 12,
     },
     searchBar: {
-      backgroundColor: colors.surface,
-      borderRadius: themedStyles.borderRadius.md,
-      padding: themedStyles.spacing.md,
+      flex: 1,
+      paddingVertical: 16,
       fontSize: 16,
       color: colors.text.primary,
-      elevation: 0,
-      shadowOpacity: 0,
     },
-    searchInput: {
-      color: colors.text.primary,
+    clearButton: {
+      padding: 4,
     },
     filterRow: {
       flexDirection: 'row',
-      marginBottom: themedStyles.spacing.md,
+      marginBottom: 16,
+      gap: 12,
     },
     filterButton: {
-      marginRight: themedStyles.spacing.sm,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderRadius: 24,
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    },
+    filterButtonText: {
+      fontSize: 14,
+      fontWeight: '600',
+      textAlign: 'center',
     },
     summaryCard: {
       backgroundColor: colors.surface,
-      marginBottom: themedStyles.spacing.sm,
-      borderRadius: themedStyles.borderRadius.md,
+      marginBottom: 8,
+      borderRadius: 16,
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
     },
     summaryRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
+      padding: 20,
     },
     summaryLabel: {
       fontSize: 14,
       color: colors.text.secondary,
-      marginBottom: 2,
+      marginBottom: 4,
     },
     summaryRight: {
       alignItems: 'flex-end',
     },
     summaryAmount: {
-      fontSize: 24,
+      fontSize: 28,
       fontWeight: 'bold',
       color: colors.error,
     },
     emptyState: {
       alignItems: 'center',
-      paddingVertical: 40,
-      paddingHorizontal: 20,
+      paddingVertical: 60,
+      paddingHorizontal: 32,
     },
     emptyText: {
-      fontSize: 18,
+      fontSize: 20,
       fontWeight: '600',
       color: colors.text.secondary,
       marginBottom: 8,
       textAlign: 'center',
     },
     emptySubtext: {
-      fontSize: 14,
+      fontSize: 16,
       color: colors.text.disabled,
       textAlign: 'center',
-      marginBottom: 20,
+      marginBottom: 32,
+      lineHeight: 24,
     },
     emptyButton: {
-      marginTop: 8,
+      paddingHorizontal: 32,
+      paddingVertical: 16,
+      borderRadius: 12,
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    },
+    emptyButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: '#FFFFFF',
+      textAlign: 'center',
     },
     fab: {
       position: 'absolute',
@@ -226,6 +298,12 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
       right: 0,
       bottom: 0,
       backgroundColor: colors.primary,
+      borderRadius: 28,
+      elevation: 4,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
     },
   });
 
@@ -237,49 +315,66 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
     <View style={styles.header}>
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <TextInput
-          placeholder="Search by category or note..."
-          onChangeText={handleSearch}
-          value={searchQuery}
-          style={styles.searchBar}
-          placeholderTextColor={colors.text.disabled}
-        />
+        <View style={styles.searchWrapper}>
+          <Ionicons name="search" size={20} color={colors.text.disabled} style={styles.searchIcon} />
+          <TextInput
+            placeholder="Search by category or note..."
+            onChangeText={handleSearch}
+            value={searchQuery}
+            style={styles.searchBar}
+            placeholderTextColor={colors.text.disabled}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              onPress={() => handleSearch('')}
+              style={styles.clearButton}
+            >
+              <Ionicons name="close-circle" size={20} color={colors.text.disabled} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* Filter Buttons */}
       <View style={styles.filterRow}>
-        <Button
-          mode={filterMonth ? 'contained' : 'outlined'}
+        <TouchableOpacity
+          style={[
+            styles.filterButton,
+            filterMonth ? { backgroundColor: colors.primary } : { backgroundColor: colors.surface }
+          ]}
           onPress={filterByCurrentMonth}
-          style={styles.filterButton}
         >
-          This Month
-        </Button>
-        <Button
-          mode="outlined"
+          <Text style={[
+            styles.filterButtonText,
+            { color: filterMonth ? '#FFFFFF' : colors.text.primary }
+          ]}>
+            This Month
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterButton, { backgroundColor: colors.surface }]}
           onPress={clearFilters}
-          style={styles.filterButton}
         >
-          Clear Filters
-        </Button>
+          <Text style={[styles.filterButtonText, { color: colors.text.primary }]}>
+            Clear Filters
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Summary Card */}
-      <Card style={styles.summaryCard} mode="outlined">
-        <Card.Content>
-          <View style={styles.summaryRow}>
-            <View>
-              <Text style={styles.summaryLabel}>Period: {getFilterText()}</Text>
-              <Text style={styles.summaryLabel}>
-                {filteredExpenses.length} expense{filteredExpenses.length !== 1 ? 's' : ''}
-              </Text>
-            </View>
-            <View style={styles.summaryRight}>
-              <Text style={styles.summaryAmount}>{formatCurrencyLocal(getTotalAmount())}</Text>
-            </View>
+      <View style={styles.summaryCard}>
+        <View style={styles.summaryRow}>
+          <View>
+            <Text style={styles.summaryLabel}>Period: {getFilterText()}</Text>
+            <Text style={styles.summaryLabel}>
+              {filteredExpenses.length} expense{filteredExpenses.length !== 1 ? 's' : ''}
+            </Text>
           </View>
-        </Card.Content>
-      </Card>
+          <View style={styles.summaryRight}>
+            <Text style={styles.summaryAmount}>{formatCurrencyLocal(getTotalAmount())}</Text>
+          </View>
+        </View>
+      </View>
     </View>
   );
 
@@ -295,19 +390,28 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
         }
       </Text>
       {!searchQuery && !filterMonth && (
-        <Button
-          mode="contained"
+        <TouchableOpacity
+          style={[styles.emptyButton, { backgroundColor: colors.primary }]}
           onPress={() => navigation.navigate('AddExpense')}
-          style={styles.emptyButton}
         >
-          Add Expense
-        </Button>
+          <Text style={styles.emptyButtonText}>Add Expense</Text>
+        </TouchableOpacity>
       )}
     </View>
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" translucent={false} />
+      
+      {/* Modern Header */}
+      <View style={styles.modernHeader}>
+        <Text style={styles.headerTitle}>Transaction History</Text>
+        <TouchableOpacity style={styles.headerIcon}>
+          <Ionicons name="filter" size={24} color={colors.text.primary} />
+        </TouchableOpacity>
+      </View>
+
       <FlatList
         data={filteredExpenses}
         renderItem={renderExpenseItem}
@@ -328,7 +432,7 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
         size="medium"
         onPress={() => navigation.navigate('AddExpense')}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 

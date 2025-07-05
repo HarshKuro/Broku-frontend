@@ -5,14 +5,14 @@ import {
   StyleSheet,
   FlatList,
   Alert,
+  TouchableOpacity,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import {
   TextInput,
-  Button,
-  Card,
-  IconButton,
-  Divider,
 } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Category } from '../types/types';
 import { categoryApi } from '../api/expenseApi';
@@ -139,19 +139,21 @@ const AddCategoryScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const renderCategoryItem = ({ item }: { item: Category }) => (
-    <Card style={styles.categoryCard} mode="outlined">
-      <Card.Content>
-        <View style={styles.categoryRow}>
-          <Text style={styles.categoryName}>{item.name}</Text>
-          <IconButton
-            icon="delete"
-            size={20}
-            onPress={() => handleDeleteCategory(item._id, item.name)}
-            style={styles.deleteButton}
-          />
+    <View style={styles.categoryCard}>
+      <View style={styles.categoryRow}>
+        <View style={styles.categoryIconContainer}>
+          <Ionicons name="pricetag" size={20} color={colors.primary} />
         </View>
-      </Card.Content>
-    </Card>
+        <Text style={[styles.categoryName, { color: colors.text.primary }]}>{item.name}</Text>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => handleDeleteCategory(item._id, item.name)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="trash-outline" size={18} color={colors.error} />
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 
   const handleInputChange = (text: string) => {
@@ -167,160 +169,211 @@ const AddCategoryScreen: React.FC<Props> = ({ navigation }) => {
       flex: 1,
       backgroundColor: colors.background,
     },
+    safeArea: {
+      flex: 1,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      backgroundColor: colors.background,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    closeButton: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    headerTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+    },
     formCard: {
-      margin: themedStyles.spacing.lg,
+      marginHorizontal: 16,
+      marginTop: 16,
       backgroundColor: colors.surface,
-      borderRadius: themedStyles.borderRadius.lg,
-      ...themedStyles.shadows.level2,
+      borderRadius: 16,
+      padding: 20,
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
     },
     title: {
-      fontSize: 24,
+      fontSize: 20,
       fontWeight: 'bold',
-      color: colors.text.primary,
-      marginBottom: themedStyles.spacing.xl,
+      marginBottom: 20,
       textAlign: 'center',
     },
     input: {
       backgroundColor: colors.surface,
-      marginBottom: themedStyles.spacing.sm,
+      marginBottom: 8,
     },
     errorText: {
-      color: colors.error,
       fontSize: 12,
-      marginBottom: themedStyles.spacing.lg,
+      marginBottom: 16,
       marginLeft: 4,
     },
     addButton: {
-      marginBottom: themedStyles.spacing.md,
-      paddingVertical: themedStyles.spacing.sm,
-      backgroundColor: colors.primary,
-      borderRadius: themedStyles.borderRadius.md,
+      paddingVertical: 16,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
     },
     addButtonText: {
       fontSize: 16,
       fontWeight: '600',
-    },
-    cancelButton: {
-      marginBottom: themedStyles.spacing.sm,
-    },
-    divider: {
-      marginHorizontal: themedStyles.spacing.lg,
-      marginVertical: themedStyles.spacing.sm,
+      color: '#FFFFFF',
     },
     categoriesSection: {
       flex: 1,
-      marginHorizontal: themedStyles.spacing.lg,
-      marginBottom: themedStyles.spacing.lg,
+      marginHorizontal: 16,
+      marginTop: 24,
+      marginBottom: 16,
     },
     sectionTitle: {
       fontSize: 18,
       fontWeight: 'bold',
-      color: colors.text.primary,
-      marginBottom: themedStyles.spacing.md,
+      marginBottom: 16,
     },
     categoryCard: {
-      marginBottom: themedStyles.spacing.sm,
       backgroundColor: colors.surface,
-      borderRadius: themedStyles.borderRadius.md,
-      ...themedStyles.shadows.level1,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 8,
+      elevation: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 1,
     },
     categoryRow: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
       alignItems: 'center',
+    },
+    categoryIconContainer: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.primary + '20', // Adding transparency
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 12,
     },
     categoryName: {
       fontSize: 16,
-      color: colors.text.primary,
+      fontWeight: '500',
       flex: 1,
     },
     deleteButton: {
-      margin: 0,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(239, 68, 68, 0.1)',
     },
     emptyCard: {
       backgroundColor: colors.surface,
-      marginTop: themedStyles.spacing.xl,
-      borderRadius: themedStyles.borderRadius.md,
-      ...themedStyles.shadows.level1,
+      borderRadius: 12,
+      padding: 32,
+      alignItems: 'center',
+      marginTop: 20,
+      elevation: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 1,
     },
     emptyText: {
       fontSize: 16,
       fontWeight: '600',
-      color: colors.text.secondary,
       textAlign: 'center',
-      marginBottom: themedStyles.spacing.sm,
+      marginBottom: 8,
     },
     emptySubtext: {
       fontSize: 14,
-      color: colors.text.disabled,
       textAlign: 'center',
+      lineHeight: 20,
     },
     listContent: {
-      paddingBottom: themedStyles.spacing.xl,
+      paddingBottom: 20,
     },
   });
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      <SafeAreaView style={styles.safeArea}>
+        {/* Header */}
+        <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.closeButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colors.text.primary }]}>Categories</Text>
+        <View style={styles.closeButton} />
+      </View>
+
       {/* Add Category Form */}
-      <Card style={styles.formCard} mode="outlined">
-        <Card.Content>
-          <Text style={styles.title}>Add New Category</Text>
-          
-          <TextInput
-            label="Category Name"
-            value={categoryName}
-            onChangeText={handleInputChange}
-            mode="outlined"
-            placeholder="e.g. Groceries, Gas, Entertainment"
-            error={!!error}
-            style={styles.input}
-            maxLength={50}
-          />
-          
-          {error ? (
-            <Text style={styles.errorText}>{error}</Text>
-          ) : null}
+      <View style={[styles.formCard, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.title, { color: colors.text.primary }]}>Add New Category</Text>
+        
+        <TextInput
+          label="Category Name"
+          value={categoryName}
+          onChangeText={handleInputChange}
+          mode="outlined"
+          placeholder="e.g. Groceries, Gas, Entertainment"
+          error={!!error}
+          style={[styles.input, { backgroundColor: colors.surface }]}
+          maxLength={50}
+        />
+        
+        {error ? (
+          <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+        ) : null}
 
-          <Button
-            mode="contained"
-            onPress={handleAddCategory}
-            loading={loading}
-            disabled={loading || !categoryName.trim()}
-            style={styles.addButton}
-            labelStyle={styles.addButtonText}
-          >
+        <TouchableOpacity
+          style={[
+            styles.addButton,
+            { backgroundColor: loading || !categoryName.trim() ? colors.text.disabled : colors.primary }
+          ]}
+          onPress={handleAddCategory}
+          disabled={loading || !categoryName.trim()}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.addButtonText}>
             {loading ? 'Adding...' : 'Add Category'}
-          </Button>
-
-          <Button
-            mode="outlined"
-            onPress={() => navigation.goBack()}
-            style={styles.cancelButton}
-            disabled={loading}
-          >
-            Back
-          </Button>
-        </Card.Content>
-      </Card>
-
-      <Divider style={styles.divider} />
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Existing Categories */}
       <View style={styles.categoriesSection}>
-        <Text style={styles.sectionTitle}>
+        <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
           Existing Categories ({categories.length})
         </Text>
         
         {categories.length === 0 ? (
-          <Card style={styles.emptyCard} mode="outlined">
-            <Card.Content>
-              <Text style={styles.emptyText}>No categories yet</Text>
-              <Text style={styles.emptySubtext}>
-                Add your first category above to get started
-              </Text>
-            </Card.Content>
-          </Card>
+          <View style={[styles.emptyCard, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.emptyText, { color: colors.text.secondary }]}>No categories yet</Text>
+            <Text style={[styles.emptySubtext, { color: colors.text.disabled }]}>
+              Add your first category above to get started
+            </Text>
+          </View>
         ) : (
           <FlatList
             data={categories}
@@ -331,6 +384,7 @@ const AddCategoryScreen: React.FC<Props> = ({ navigation }) => {
           />
         )}
       </View>
+    </SafeAreaView>
     </View>
   );
 };

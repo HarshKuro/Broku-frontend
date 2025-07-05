@@ -4,6 +4,7 @@ export interface Expense {
   amount: number;
   date: string;
   note: string;
+  type: 'income' | 'expense';
   createdAt: string;
   updatedAt: string;
 }
@@ -20,6 +21,7 @@ export interface ExpenseFormData {
   amount: string;
   date: Date;
   note: string;
+  type?: 'income' | 'expense';
 }
 
 export interface ApiResponse<T> {
@@ -48,10 +50,60 @@ export interface MonthlySummary {
   };
 }
 
+export interface AnalyticsData {
+  summary: {
+    income: number;
+    expense: number;
+    balance: number;
+    period: string;
+  };
+  expensesByCategory: {
+    _id: string;
+    totalAmount: number;
+    count: number;
+  }[];
+  timeBreakdown: {
+    _id: {
+      date: string;
+      type: string;
+    };
+    totalAmount: number;
+    count: number;
+  }[];
+  period: {
+    startDate: string;
+    endDate: string;
+    type: string;
+  };
+}
+
+export interface InsightsData {
+  currentMonth: {
+    _id: string;
+    totalAmount: number;
+    count: number;
+  }[];
+  lastMonth: {
+    _id: string;
+    totalAmount: number;
+    count: number;
+  }[];
+  topCategory?: {
+    _id: string;
+    totalAmount: number;
+    count: number;
+  };
+  recentHighExpense?: Expense;
+}
+
 export type RootStackParamList = {
   Home: undefined;
   AddExpense: undefined;
+  AddIncome: undefined;
   History: undefined;
   AddCategory: undefined;
   Summary: undefined;
+  Analytics: undefined;
+  Insights: undefined;
+  Main: undefined;
 };

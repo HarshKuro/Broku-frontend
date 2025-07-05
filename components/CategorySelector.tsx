@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal } from 'react-native';
 import { Button, Chip } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
 import { Category } from '../types/types';
 import { categoryApi } from '../api/expenseApi';
-import { theme } from '../constants/theme';
+import { useTheme } from '../constants/ThemeProvider';
 
 interface CategorySelectorProps {
   selectedCategory: string;

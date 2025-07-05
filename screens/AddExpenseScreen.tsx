@@ -7,17 +7,21 @@ import {
   Alert,
   TouchableOpacity,
   Platform,
+  SafeAreaView,
+  StatusBar,
+  Modal,
+  Dimensions,
 } from 'react-native';
 import {
   TextInput,
   Button,
   Card,
 } from 'react-native-paper';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, ExpenseFormData } from '../types/types';
 import { expenseApi } from '../api/expenseApi';
-import CategorySelector from '../components/CategorySelector';
+import CategorySelector from '../components/CategorySelectorSearch';
 import { useTheme, useThemedStyles } from '../constants/ThemeProvider';
 
 type AddExpenseScreenNavigationProp = StackNavigationProp<RootStackParamList, 'AddExpense'>;
@@ -38,6 +42,7 @@ const AddExpenseScreen: React.FC<Props> = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const validateForm = (): boolean => {
     const newErrors: {[key: string]: string} = {};
@@ -120,23 +125,99 @@ const AddExpenseScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
-  const handleDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      setFormData(prev => ({ ...prev, date: selectedDate }));
-    }
+  const handleDateChange = (selectedDate: Date) => {
+    setFormData(prev => ({ ...prev, date: selectedDate }));
+    setShowDatePicker(false);
   };
 
   const openDatePicker = () => {
     setShowDatePicker(true);
+  };
+
+  // Calendar helper functions
+  const getDaysInMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  };
+
+  const formatMonthYear = (date: Date) => {
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  };
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    const newMonth = new Date(currentMonth);
+    if (direction === 'prev') {
+      newMonth.setMonth(currentMonth.getMonth() - 1);
+    } else {
+      newMonth.setMonth(currentMonth.getMonth() + 1);
+    }
+    setCurrentMonth(newMonth);
+  };
+
+  const renderCalendar = () => {
+    const daysInMonth = getDaysInMonth(currentMonth);
+    const firstDay = getFirstDayOfMonth(currentMonth);
+    const today = new Date();
+    const selectedDate = formData.date;
+
+    const days = [];
+    const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+    // Add day labels
+    const dayLabelRow = dayLabels.map((day, index) => (
+      <View key={`label-${index}`} style={styles.dayLabel}>
+        <Text style={[styles.dayLabelText, { color: colors.text.secondary }]}>{day}</Text>
+      </View>
+    ));
+
+    // Add empty cells for days before month starts
+    for (let i = 0; i < firstDay; i++) {
+      days.push(<View key={`empty-${i}`} style={styles.dayCell} />);
+    }
+
+    // Add days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const cellDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+      const isSelected = selectedDate.toDateString() === cellDate.toDateString();
+      const isToday = today.toDateString() === cellDate.toDateString();
+
+      days.push(
+        <TouchableOpacity
+          key={day}
+          style={[
+            styles.dayCell,
+            isSelected && [styles.selectedDay, { backgroundColor: colors.primary }],
+            isToday && !isSelected && [styles.todayDay, { borderColor: colors.primary }]
+          ]}
+          onPress={() => handleDateChange(cellDate)}
+        >
+          <Text
+            style={[
+              styles.dayText,
+              { color: colors.text.primary },
+              isSelected && { color: '#FFFFFF' },
+              isToday && !isSelected && { color: colors.primary }
+            ]}
+          >
+            {day}
+          </Text>
+        </TouchableOpacity>
+      );
+    }
+
+    return (
+      <View style={styles.calendar}>
+        <View style={styles.dayLabelsRow}>
+          {dayLabelRow}
+        </View>
+        <View style={styles.daysGrid}>
+          {days}
+        </View>
+      </View>
+    );
   };
 
   // Create styles inside component to access theme
@@ -145,183 +226,216 @@ const AddExpenseScreen: React.FC<Props> = ({ navigation }) => {
       flex: 1,
       backgroundColor: colors.background,
     },
-    card: {
-      margin: themedStyles.spacing.lg,
-      backgroundColor: colors.surface,
-      borderRadius: themedStyles.borderRadius.md,
-      ...themedStyles.shadows.level1,
+    content: {
+      flex: 1,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+    },
+    closeButton: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     title: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      color: colors.text.primary,
-      marginBottom: themedStyles.spacing.xl,
-      textAlign: 'center',
-    },
-    section: {
-      marginBottom: themedStyles.spacing.xl,
-    },
-    sectionTitle: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: colors.text.primary,
-      marginBottom: themedStyles.spacing.sm,
-    },
-    input: {
-      backgroundColor: colors.surface,
-      marginBottom: themedStyles.spacing.sm,
-    },
-    amountContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: themedStyles.spacing.sm,
-    },
-    currencySymbol: {
       fontSize: 18,
-      fontWeight: 'bold',
-      color: colors.accent,
-      marginRight: themedStyles.spacing.sm,
-      marginTop: themedStyles.spacing.sm,
+      fontWeight: '600',
+    },
+    inputSection: {
+      marginHorizontal: 16,
+      marginBottom: 16,
+      padding: 20,
+      borderRadius: 12,
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    },
+    inputLabel: {
+      fontSize: 14,
+      fontWeight: '500',
+      marginBottom: 12,
     },
     amountInput: {
-      flex: 1,
-      backgroundColor: colors.surface,
-    },
-    dateButton: {
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: themedStyles.borderRadius.sm,
-      padding: themedStyles.spacing.md,
-      backgroundColor: colors.surface,
-      marginBottom: themedStyles.spacing.sm,
-    },
-    dateText: {
       fontSize: 16,
-      color: colors.text.primary,
+      fontWeight: '400',
+      paddingVertical: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: 'transparent',
     },
-    datePlaceholder: {
-      fontSize: 16,
-      color: colors.text.disabled,
+    dateHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 20,
     },
-    errorText: {
-      color: colors.error,
-      fontSize: 12,
-      marginBottom: themedStyles.spacing.md,
-      marginLeft: 4,
-    },
-    submitButton: {
-      marginBottom: themedStyles.spacing.md,
-      paddingVertical: themedStyles.spacing.sm,
-      backgroundColor: colors.primary,
-      borderRadius: themedStyles.borderRadius.md,
-    },
-    submitButtonText: {
+    monthText: {
       fontSize: 16,
       fontWeight: '600',
     },
-    cancelButton: {
-      marginBottom: themedStyles.spacing.sm,
+    calendar: {
+      marginTop: 10,
+    },
+    dayLabelsRow: {
+      flexDirection: 'row',
+      marginBottom: 10,
+    },
+    dayLabel: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: 8,
+    },
+    dayLabelText: {
+      fontSize: 14,
+      fontWeight: '500',
+    },
+    daysGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+    },
+    dayCell: {
+      width: `${100/7}%`,
+      aspectRatio: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 8,
+    },
+    selectedDay: {
+      borderRadius: 20,
+    },
+    todayDay: {
+      borderRadius: 20,
+      borderWidth: 1,
+    },
+    dayText: {
+      fontSize: 16,
+      fontWeight: '400',
+    },
+    noteInput: {
+      fontSize: 16,
+      fontWeight: '400',
+      textAlignVertical: 'top',
+      minHeight: 80,
+      borderWidth: 1,
+      borderRadius: 8,
+      padding: 12,
+    },
+    saveButton: {
+      marginHorizontal: 16,
+      marginBottom: 32,
+      paddingVertical: 16,
+      borderRadius: 12,
+      alignItems: 'center',
+    },
+    saveButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: '#FFFFFF',
+    },
+    errorText: {
+      fontSize: 12,
+      marginTop: 8,
     },
   });
 
   return (
-    <ScrollView style={styles.container}>
-      <Card style={styles.card} mode="outlined">
-        <Card.Content>
-          <Text style={styles.title}>Add New Expense</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle="dark-content" translucent={false} />
+      
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
+          <TouchableOpacity 
+            style={styles.closeButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="close" size={24} color={colors.text.primary} />
+          </TouchableOpacity>
+          <Text style={[styles.title, { color: colors.text.primary }]}>Add New Expense</Text>
+          <View style={styles.closeButton} />
+        </View>
 
-          {/* Category Selection */}
-          <View style={styles.section}>
-            <CategorySelector
-              selectedCategory={formData.category}
-              onCategorySelect={handleCategorySelect}
-              onAddCategory={() => navigation.navigate('AddCategory')}
-            />
-            {errors.category ? (
-              <Text style={styles.errorText}>{errors.category}</Text>
-            ) : null}
-          </View>
+        {/* Amount Input */}
+        <View style={[styles.inputSection, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Amount (₹)</Text>
+          <TextInput
+            value={formData.amount}
+            onChangeText={handleAmountChange}
+            placeholder="0"
+            keyboardType="numeric"
+            style={[styles.amountInput, { color: colors.text.primary, backgroundColor: colors.surface }]}
+            placeholderTextColor={colors.text.disabled}
+          />
+          {errors.amount ? (
+            <Text style={[styles.errorText, { color: colors.error }]}>{errors.amount}</Text>
+          ) : null}
+        </View>
 
-          {/* Amount Input */}
-          <View style={styles.section}>
-            <TextInput
-              label="Amount (₹)"
-              value={formData.amount}
-              onChangeText={handleAmountChange}
-              mode="outlined"
-              keyboardType="numeric"
-              placeholder="0.00"
-              error={!!errors.amount}
-              style={styles.input}
-            />
-            {errors.amount ? (
-              <Text style={styles.errorText}>{errors.amount}</Text>
-            ) : null}
-          </View>
+        {/* Category Selection */}
+        <View style={[styles.inputSection, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Category</Text>
+          <CategorySelector
+            selectedCategory={formData.category}
+            onCategorySelect={handleCategorySelect}
+            onAddCategory={() => navigation.navigate('AddCategory')}
+          />
+          {errors.category ? (
+            <Text style={[styles.errorText, { color: colors.error }]}>{errors.category}</Text>
+          ) : null}
+        </View>
 
-          {/* Date Selection */}
-          <View style={styles.section}>
-            <TouchableOpacity onPress={openDatePicker}>
-              <TextInput
-                label="Date"
-                value={formatDate(formData.date)}
-                mode="outlined"
-                editable={false}
-                right={<TextInput.Icon icon="calendar" size={20} />}
-                style={styles.input}
-              />
+        {/* Date Selection */}
+        <View style={[styles.inputSection, { backgroundColor: colors.surface }]}>
+          <View style={styles.dateHeader}>
+            <TouchableOpacity onPress={() => navigateMonth('prev')}>
+              <Ionicons name="chevron-back" size={24} color={colors.text.primary} />
+            </TouchableOpacity>
+            <Text style={[styles.monthText, { color: colors.text.primary }]}>
+              {formatMonthYear(currentMonth)}
+            </Text>
+            <TouchableOpacity onPress={() => navigateMonth('next')}>
+              <Ionicons name="chevron-forward" size={24} color={colors.text.primary} />
             </TouchableOpacity>
           </View>
+          {renderCalendar()}
+        </View>
 
-          {/* Note Input */}
-          <View style={styles.section}>
-            <TextInput
-              label="Note (Optional)"
-              value={formData.note}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, note: text }))}
-              mode="outlined"
-              multiline
-              numberOfLines={3}
-              placeholder="Add a note about this expense..."
-              style={styles.input}
-            />
-          </View>
+        {/* Note Input */}
+        <View style={[styles.inputSection, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Note (optional)</Text>
+          <TextInput
+            value={formData.note}
+            onChangeText={(text) => setFormData(prev => ({ ...prev, note: text }))}
+            placeholder="Add a note..."
+            multiline
+            numberOfLines={4}
+            style={[styles.noteInput, { 
+              color: colors.text.primary, 
+              backgroundColor: colors.surface,
+              borderColor: colors.border 
+            }]}
+            placeholderTextColor={colors.text.disabled}
+          />
+        </View>
 
-          {/* Submit Button */}
-          <Button
-            mode="contained"
-            onPress={handleSubmit}
-            loading={loading}
-            disabled={loading}
-            style={styles.submitButton}
-            labelStyle={styles.submitButtonText}
-          >
-            {loading ? 'Adding Expense...' : 'Add Expense'}
-          </Button>
-
-          {/* Cancel Button */}
-          <Button
-            mode="outlined"
-            onPress={() => navigation.goBack()}
-            style={styles.cancelButton}
-            disabled={loading}
-          >
-            Cancel
-          </Button>
-        </Card.Content>
-      </Card>
-
-      {/* Date Picker Modal */}
-      {showDatePicker && (
-        <DateTimePicker
-          value={formData.date}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={handleDateChange}
-          maximumDate={new Date()}
-        />
-      )}
-    </ScrollView>
+        {/* Save Button */}
+        <TouchableOpacity
+          style={[styles.saveButton, { backgroundColor: colors.primary }]}
+          onPress={handleSubmit}
+          disabled={loading}
+        >
+          <Text style={styles.saveButtonText}>
+            {loading ? 'Saving...' : 'Save Expense'}
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 

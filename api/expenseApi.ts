@@ -1,12 +1,13 @@
 import axios from 'axios';
-import { Expense, Category, ApiResponse, MonthlySummary, ExpenseFormData } from '../types/types';
+import { Expense, Category, ApiResponse, MonthlySummary, ExpenseFormData, AnalyticsData, InsightsData } from '../types/types';
+import { config } from '../config/env';
 
-// Configure base URL - Update this with your actual backend URL
-const BASE_URL = 'http://192.168.0.206:5000/api'; // Updated with your local IP
+// Configure base URL using environment configuration
+const BASE_URL = config.API_BASE_URL;
 
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
+  timeout: 15000, // Increased timeout for production
   headers: {
     'Content-Type': 'application/json',
   },
@@ -102,7 +103,31 @@ export const expenseApi = {
       console.error('Error fetching monthly summary:', error);
       throw error;
     }
-  }
+  },
+
+  // Get analytics data
+  getAnalytics: async (period: 'week' | 'month' | 'lastMonth' = 'month'): Promise<AnalyticsData> => {
+    try {
+      const response = await api.get<ApiResponse<AnalyticsData>>('/expenses/analytics', {
+        params: { period }
+      });
+      return response.data.data!;
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      throw error;
+    }
+  },
+
+  // Get insights data
+  getInsights: async (): Promise<InsightsData> => {
+    try {
+      const response = await api.get<ApiResponse<InsightsData>>('/expenses/insights');
+      return response.data.data!;
+    } catch (error) {
+      console.error('Error fetching insights:', error);
+      throw error;
+    }
+  },
 };
 
 // Category API functions
