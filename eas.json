@@ -9,26 +9,30 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
-      }
+      },
+      "channel": "development"
     },
     "preview": {
       "distribution": "internal",
       "android": {
         "buildType": "apk"
-      }
+      },
+      "channel": "preview"
     },
     "production": {
       "autoIncrement": true,
       "android": {
         "buildType": "apk"
-      }
+      },
+      "channel": "production"
     },
     "apk": {
       "android": {
         "buildType": "apk",
         "gradleCommand": ":app:assembleRelease"
       },
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "production"
     }
   },
   "submit": {

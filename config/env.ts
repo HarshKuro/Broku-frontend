@@ -13,7 +13,7 @@ const developmentConfig: AppConfig = {
 };
 
 const productionConfig: AppConfig = {
-  API_BASE_URL: 'https://your-deployed-backend.herokuapp.com/api', // Replace with your deployed backend URL
+  API_BASE_URL: 'https://broku-backend.onrender.com/api', // Replace with your deployed backend URL
   ENVIRONMENT: 'production',
 };
 

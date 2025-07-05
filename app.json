@@ -11,7 +11,7 @@
       "@react-native-community/datetimepicker"
     ],
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -39,6 +39,12 @@
       "eas": {
         "projectId": "ba6e7698-9a80-47a5-825d-9c59d889ca30"
       }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/ba6e7698-9a80-47a5-825d-9c59d889ca30"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }

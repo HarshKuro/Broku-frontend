@@ -7,7 +7,7 @@ const BASE_URL = config.API_BASE_URL;
 
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 15000, // Increased timeout for production
+  timeout: 60000, // 60 seconds timeout for Render hibernation
   headers: {
     'Content-Type': 'application/json',
   },
@@ -32,21 +32,65 @@ api.interceptors.response.use(
   },
   (error) => {
     console.error('API response error:', error.response?.data || error.message);
+    
+    // Handle specific error cases
+    if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error') {
+      console.error('Network error - backend might be hibernating or unreachable');
+    }
+    
+    if (error.response?.status === 503) {
+      console.error('Service unavailable - backend is hibernating, please wait...');
+    }
+    
     return Promise.reject(error);
   }
 );
+
+// Utility function to wake up hibernating backend
+const wakeUpBackend = async (): Promise<boolean> => {
+  try {
+    console.log('Waking up backend...');
+    await api.get('/health', { timeout: 60000 });
+    console.log('Backend is awake!');
+    return true;
+  } catch (error) {
+    console.error('Failed to wake up backend:', error);
+    return false;
+  }
+};
+
+// Retry wrapper for API calls
+const withRetry = async <T>(fn: () => Promise<T>, retries = 2): Promise<T> => {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      console.log(`Attempt ${i + 1} failed:`, error.message);
+      
+      // If it's a network error or 503, try to wake up backend
+      if ((error.code === 'NETWORK_ERROR' || error.response?.status === 503) && i < retries) {
+        console.log('Backend appears to be hibernating, attempting to wake up...');
+        await wakeUpBackend();
+        // Wait a bit more for the backend to fully start
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        continue;
+      }
+      
+      if (i === retries) throw error;
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+  }
+  throw new Error('Max retries exceeded');
+};
 
 // Expense API functions
 export const expenseApi = {
   // Get all expenses with optional filtering
   getAll: async (params?: { month?: number; year?: number; category?: string }): Promise<Expense[]> => {
-    try {
+    return withRetry(async () => {
       const response = await api.get<ApiResponse<Expense[]>>('/expenses', { params });
       return response.data.data || [];
-    } catch (error) {
-      console.error('Error fetching expenses:', error);
-      throw error;
-    }
+    });
   },
 
   // Get expense by ID
@@ -134,34 +178,25 @@ export const expenseApi = {
 export const categoryApi = {
   // Get all categories
   getAll: async (): Promise<Category[]> => {
-    try {
+    return withRetry(async () => {
       const response = await api.get<ApiResponse<Category[]>>('/categories');
       return response.data.data || [];
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-      throw error;
-    }
+    });
   },
 
   // Create new category
   create: async (name: string): Promise<Category> => {
-    try {
+    return withRetry(async () => {
       const response = await api.post<ApiResponse<Category>>('/categories', { name });
       return response.data.data!;
-    } catch (error) {
-      console.error('Error creating category:', error);
-      throw error;
-    }
+    });
   },
 
   // Delete category
   delete: async (id: string): Promise<void> => {
-    try {
+    return withRetry(async () => {
       await api.delete(`/categories/${id}`);
-    } catch (error) {
-      console.error('Error deleting category:', error);
-      throw error;
-    }
+    });
   }
 };
 
