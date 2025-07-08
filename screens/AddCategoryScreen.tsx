@@ -15,7 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Category } from '../types/types';
-import { categoryApi } from '../api/expenseApi';
+import { offlineCategoryApi as categoryApi } from '../services/offlineApi';
 import { useTheme, useThemedStyles } from '../constants/ThemeProvider';
 
 type AddCategoryScreenNavigationProp = StackNavigationProp<RootStackParamList, 'AddCategory'>;

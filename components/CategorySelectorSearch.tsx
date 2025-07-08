@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Category } from '../types/types';
-import { categoryApi } from '../api/expenseApi';
+import { offlineCategoryApi as categoryApi } from '../services/offlineApi';
 import { useTheme } from '../constants/ThemeProvider';
 
 interface CategorySelectorProps {

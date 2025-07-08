@@ -1,12 +1,27 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { Provider as PaperProvider } from 'react-native-paper';
 import 'react-native-gesture-handler';
 import Navigation from './navigation';
 import { ThemeProvider, useTheme } from './constants/ThemeProvider';
+import { OfflineManager } from './services/offlineManager';
 
 const AppContent = () => {
   const { colors, isDark } = useTheme();
+
+  // Initialize offline functionality
+  useEffect(() => {
+    const initializeOffline = async () => {
+      try {
+        await OfflineManager.initialize();
+        console.log('Offline functionality initialized');
+      } catch (error) {
+        console.error('Failed to initialize offline functionality:', error);
+      }
+    };
+
+    initializeOffline();
+  }, []);
 
   const paperTheme = {
     colors: {

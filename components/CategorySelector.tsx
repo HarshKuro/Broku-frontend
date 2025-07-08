@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal } from 'rea
 import { Button, Chip } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { Category } from '../types/types';
-import { categoryApi } from '../api/expenseApi';
+import { offlineCategoryApi as categoryApi } from '../services/offlineApi';
 import { useTheme } from '../constants/ThemeProvider';
 
 interface CategorySelectorProps {

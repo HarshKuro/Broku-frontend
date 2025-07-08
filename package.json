@@ -4,23 +4,31 @@
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
+    "start:dev-client": "expo start --dev-client",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "build:development:android": "eas build --platform android --profile development",
+    "build:development:ios": "eas build --platform ios --profile development",
+    "build:preview:android": "eas build --platform android --profile preview",
+    "build:production:android": "eas build --platform android --profile production"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
+    "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-community/blur": "^4.4.1",
     "@react-native-community/datetimepicker": "^8.4.2",
+    "@react-native-community/netinfo": "^11.4.1",
     "@react-native-picker/picker": "^2.11.1",
     "@react-navigation/bottom-tabs": "^6.5.20",
     "@react-navigation/native": "^6.1.9",
     "@react-navigation/stack": "^6.3.20",
     "axios": "^1.7.9",
     "expo": "~53.0.17",
-    "expo-dev-client": "^5.2.4",
+    "expo-dev-client": "~5.2.4",
     "expo-linear-gradient": "^14.1.5",
     "expo-status-bar": "~2.2.3",
+    "expo-updates": "~0.28.16",
     "lottie-react-native": "^7.2.3",
     "react": "19.0.0",
     "react-native": "0.79.5",
@@ -32,8 +40,7 @@
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
     "react-native-svg": "^15.12.0",
-    "react-native-vector-icons": "^10.2.0",
-    "expo-updates": "~0.28.16"
+    "react-native-vector-icons": "^10.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

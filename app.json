@@ -2,7 +2,7 @@
   "expo": {
     "name": "Broku",
     "slug": "expense-tracker-app",
-    "version": "1.0.1",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -23,7 +23,7 @@
       "package": "com.expensetracker.app",
       "versionCode": 1,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
@@ -39,12 +39,6 @@
       "eas": {
         "projectId": "ba6e7698-9a80-47a5-825d-9c59d889ca30"
       }
-    },
-    "updates": {
-      "url": "https://u.expo.dev/ba6e7698-9a80-47a5-825d-9c59d889ca30"
-    },
-    "runtimeVersion": {
-      "policy": "appVersion"
     }
   }
 }

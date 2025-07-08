@@ -16,7 +16,7 @@ import { Card, FAB } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Expense } from '../types/types';
-import { expenseApi } from '../api/expenseApi';
+import { offlineExpenseApi as expenseApi } from '../services/offlineApi';
 import ExpenseCard from '../components/ExpenseCard';
 import { formatCurrency } from '../utils/currency';
 import { useTheme, useThemedStyles } from '../constants/ThemeProvider';
@@ -37,6 +37,7 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [filterMonth, setFilterMonth] = useState<number | null>(null);
   const [filterYear, setFilterYear] = useState<number | null>(null);
+  const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
 
   useFocusEffect(
     useCallback(() => {
@@ -97,12 +98,55 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
       });
     }
 
+    // Filter by transaction type
+    if (filterType !== 'all') {
+      if (filterType === 'expense') {
+        filtered = filtered.filter(expense => expense.type === 'expense' || !expense.type);
+      } else {
+        filtered = filtered.filter(expense => expense.type === filterType);
+      }
+    }
+
     setFilteredExpenses(filtered);
   };
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     filterExpenses(expenses, query);
+  };
+
+  const handleTypeFilter = (type: 'all' | 'income' | 'expense') => {
+    setFilterType(type);
+    // Re-filter with new type
+    let filtered = expenses;
+
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter(expense =>
+        expense.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        expense.note.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Apply month/year filter
+    if (filterMonth && filterYear) {
+      filtered = filtered.filter(expense => {
+        const expenseDate = new Date(expense.date);
+        return expenseDate.getMonth() + 1 === filterMonth && 
+               expenseDate.getFullYear() === filterYear;
+      });
+    }
+
+    // Apply type filter
+    if (type !== 'all') {
+      if (type === 'expense') {
+        filtered = filtered.filter(expense => expense.type === 'expense' || !expense.type);
+      } else {
+        filtered = filtered.filter(expense => expense.type === type);
+      }
+    }
+
+    setFilteredExpenses(filtered);
   };
 
   const filterByCurrentMonth = () => {
@@ -125,12 +169,25 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
   const clearFilters = () => {
     setFilterMonth(null);
     setFilterYear(null);
+    setFilterType('all');
     setSearchQuery('');
     setFilteredExpenses(expenses);
   };
 
   const getTotalAmount = () => {
-    return filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+    const totalIncome = filteredExpenses
+      .filter(item => item.type === 'income')
+      .reduce((sum, item) => sum + item.amount, 0);
+    
+    const totalExpenses = filteredExpenses
+      .filter(item => item.type === 'expense' || !item.type) // Treat missing type as expense
+      .reduce((sum, item) => sum + item.amount, 0);
+    
+    return {
+      income: totalIncome,
+      expenses: totalExpenses,
+      net: totalIncome - totalExpenses
+    };
   };
 
   const formatCurrencyLocal = (amount: number) => {
@@ -356,7 +413,53 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
           onPress={clearFilters}
         >
           <Text style={[styles.filterButtonText, { color: colors.text.primary }]}>
-            Clear Filters
+            Clear All
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Type Filter Buttons */}
+      <View style={styles.filterRow}>
+        <TouchableOpacity
+          style={[
+            styles.filterButton,
+            filterType === 'all' ? { backgroundColor: colors.primary } : { backgroundColor: colors.surface }
+          ]}
+          onPress={() => handleTypeFilter('all')}
+        >
+          <Text style={[
+            styles.filterButtonText,
+            { color: filterType === 'all' ? '#FFFFFF' : colors.text.primary }
+          ]}>
+            All
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.filterButton,
+            filterType === 'income' ? { backgroundColor: colors.success } : { backgroundColor: colors.surface }
+          ]}
+          onPress={() => handleTypeFilter('income')}
+        >
+          <Text style={[
+            styles.filterButtonText,
+            { color: filterType === 'income' ? '#FFFFFF' : colors.text.primary }
+          ]}>
+            Income
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.filterButton,
+            filterType === 'expense' ? { backgroundColor: colors.error } : { backgroundColor: colors.surface }
+          ]}
+          onPress={() => handleTypeFilter('expense')}
+        >
+          <Text style={[
+            styles.filterButtonText,
+            { color: filterType === 'expense' ? '#FFFFFF' : colors.text.primary }
+          ]}>
+            Expenses
           </Text>
         </TouchableOpacity>
       </View>
@@ -367,11 +470,26 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
           <View>
             <Text style={styles.summaryLabel}>Period: {getFilterText()}</Text>
             <Text style={styles.summaryLabel}>
-              {filteredExpenses.length} expense{filteredExpenses.length !== 1 ? 's' : ''}
+              {filteredExpenses.length} transaction{filteredExpenses.length !== 1 ? 's' : ''}
             </Text>
           </View>
           <View style={styles.summaryRight}>
-            <Text style={styles.summaryAmount}>{formatCurrencyLocal(getTotalAmount())}</Text>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={[styles.summaryAmount, { color: colors.success, fontSize: 16 }]}>
+                Income: {formatCurrencyLocal(getTotalAmount().income)}
+              </Text>
+              <Text style={[styles.summaryAmount, { color: colors.error, fontSize: 16 }]}>
+                Expenses: {formatCurrencyLocal(getTotalAmount().expenses)}
+              </Text>
+              <View style={{ height: 1, backgroundColor: colors.border, width: '100%', marginVertical: 4 }} />
+              <Text style={[styles.summaryAmount, { 
+                color: getTotalAmount().net >= 0 ? colors.success : colors.error,
+                fontSize: 20,
+                fontWeight: 'bold'
+              }]}>
+                Net: {formatCurrencyLocal(getTotalAmount().net)}
+              </Text>
+            </View>
           </View>
         </View>
       </View>

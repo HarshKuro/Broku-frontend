@@ -16,7 +16,7 @@ import { LineChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, AnalyticsData } from '../types/types';
-import { expenseApi } from '../api/expenseApi';
+import { offlineExpenseApi as expenseApi } from '../services/offlineApi';
 import { formatCurrency } from '../utils/currency';
 import { useTheme } from '../constants/ThemeProvider';
 
