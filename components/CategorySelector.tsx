@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Category } from '../types/types';
 import { offlineCategoryApi as categoryApi } from '../services/offlineApi';
 import { useTheme } from '../constants/ThemeProvider';
+import { theme } from '../constants/theme';
 
 interface CategorySelectorProps {
   selectedCategory: string;
@@ -19,6 +20,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
 }) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const { colors } = useTheme();
 
   useEffect(() => {
     fetchCategories();
@@ -39,6 +41,8 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
   const refreshCategories = () => {
     fetchCategories();
   };
+
+  const styles = createStyles(colors);
 
   return (
     <View style={styles.container}>
@@ -91,7 +95,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     marginVertical: theme.spacing.lg,
   },
@@ -105,14 +109,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: theme.colors.text.primary,
+    color: colors.text.primary,
   },
   addButton: {
     marginRight: -8,
   },
   addButtonLabel: {
     fontSize: 12,
-    color: theme.colors.primary,
+    color: colors.primary,
   },
   scrollView: {
     marginBottom: theme.spacing.sm,
@@ -123,18 +127,18 @@ const styles = StyleSheet.create({
   },
   chip: {
     marginRight: theme.spacing.sm,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: theme.borderRadius.full,
     ...theme.shadows.level1,
   },
   selectedChip: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: colors.primary,
   },
   chipText: {
-    color: theme.colors.text.primary,
+    color: colors.text.primary,
   },
   selectedChipText: {
-    color: theme.colors.surface,
+    color: colors.surface,
   },
   emptyState: {
     alignItems: 'center',
@@ -143,12 +147,12 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: theme.colors.text.secondary,
+    color: colors.text.secondary,
     marginBottom: theme.spacing.md,
   },
   emptyButton: {
     marginTop: theme.spacing.sm,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: colors.primary,
     borderRadius: theme.borderRadius.md,
   },
 });

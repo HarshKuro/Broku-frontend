@@ -62,10 +62,10 @@ export const offlineExpenseApi = {
         return expense;
       } catch (error) {
         // If server request fails, store locally and sync later
-        return await this.createOffline(expenseData);
+        return await offlineExpenseApi.createOffline(expenseData);
       }
     } else {
-      return await this.createOffline(expenseData);
+      return await offlineExpenseApi.createOffline(expenseData);
     }
   },
 
@@ -109,10 +109,10 @@ export const offlineExpenseApi = {
         return expense;
       } catch (error) {
         // If server request fails, store update locally and sync later
-        return await this.updateOffline(id, expenseData);
+        return await offlineExpenseApi.updateOffline(id, expenseData);
       }
     } else {
-      return await this.updateOffline(id, expenseData);
+      return await offlineExpenseApi.updateOffline(id, expenseData);
     }
   },
 
@@ -188,10 +188,10 @@ export const offlineExpenseApi = {
         return await originalExpenseApi.getMonthlySummary(month, year);
       } catch (error) {
         // Fall back to local calculation
-        return await this.calculateMonthlySummaryOffline(month, year);
+        return await offlineExpenseApi.calculateMonthlySummaryOffline(month, year);
       }
     } else {
-      return await this.calculateMonthlySummaryOffline(month, year);
+      return await offlineExpenseApi.calculateMonthlySummaryOffline(month, year);
     }
   },
 
@@ -251,21 +251,37 @@ export const offlineExpenseApi = {
       } catch (error) {
         // Return a basic analytics structure
         return {
-          totalExpenses: 0,
-          totalCategories: 0,
-          averagePerDay: 0,
-          topCategories: [],
-          dailySpending: [],
+          summary: {
+            income: 0,
+            expense: 0,
+            balance: 0,
+            period: period || 'current-month',
+          },
+          expensesByCategory: [],
+          timeBreakdown: [],
+          period: {
+            startDate: new Date().toISOString(),
+            endDate: new Date().toISOString(),
+            type: 'month',
+          },
         };
       }
     } else {
       // Return a basic analytics structure
       return {
-        totalExpenses: 0,
-        totalCategories: 0,
-        averagePerDay: 0,
-        topCategories: [],
-        dailySpending: [],
+        summary: {
+          income: 0,
+          expense: 0,
+          balance: 0,
+          period: period || 'current-month',
+        },
+        expensesByCategory: [],
+        timeBreakdown: [],
+        period: {
+          startDate: new Date().toISOString(),
+          endDate: new Date().toISOString(),
+          type: 'month',
+        },
       };
     }
   },
@@ -278,19 +294,19 @@ export const offlineExpenseApi = {
       } catch (error) {
         // Return basic insights structure
         return {
-          monthlyTrend: 'stable',
-          topSpendingCategory: '',
-          budgetStatus: 'unknown',
-          savings: 0,
+          currentMonth: [],
+          lastMonth: [],
+          topCategory: undefined,
+          recentHighExpense: undefined,
         };
       }
     } else {
       // Return basic insights structure
       return {
-        monthlyTrend: 'stable',
-        topSpendingCategory: '',
-        budgetStatus: 'unknown',
-        savings: 0,
+        currentMonth: [],
+        lastMonth: [],
+        topCategory: undefined,
+        recentHighExpense: undefined,
       };
     }
   },
@@ -323,10 +339,10 @@ export const offlineCategoryApi = {
         await OfflineStorageService.addCategory(category);
         return category;
       } catch (error) {
-        return await this.createOffline(name);
+        return await offlineCategoryApi.createOffline(name);
       }
     } else {
-      return await this.createOffline(name);
+      return await offlineCategoryApi.createOffline(name);
     }
   },
 

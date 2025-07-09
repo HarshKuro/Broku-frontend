@@ -63,9 +63,34 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       // Fetch real analytics data for current month
       const analyticsData = await expenseApi.getAnalytics('month');
       
-      // Set real income and expense data
-      setMonthlyIncome(analyticsData.summary.income);
-      setMonthlyExpense(analyticsData.summary.expense);
+      // Set real income and expense data with null checking
+      if (analyticsData && analyticsData.summary) {
+        setMonthlyIncome(analyticsData.summary.income || 0);
+        setMonthlyExpense(analyticsData.summary.expense || 0);
+      } else {
+        // If no analytics data, calculate from raw expenses
+        const allExpenses = await expenseApi.getAll();
+        const currentDate = new Date();
+        const currentMonth = currentDate.getMonth();
+        const currentYear = currentDate.getFullYear();
+        
+        const thisMonthTransactions = allExpenses.filter(item => {
+          const itemDate = new Date(item.date);
+          return itemDate.getMonth() === currentMonth && 
+                 itemDate.getFullYear() === currentYear;
+        });
+        
+        const income = thisMonthTransactions
+          .filter(item => item.type === 'income')
+          .reduce((sum, item) => sum + item.amount, 0);
+          
+        const expenses = thisMonthTransactions
+          .filter(item => item.type === 'expense' || !item.type)
+          .reduce((sum, item) => sum + item.amount, 0);
+          
+        setMonthlyIncome(income);
+        setMonthlyExpense(expenses);
+      }
       
       // Fetch recent expenses (all types, but filter display)
       const allExpenses = await expenseApi.getAll();

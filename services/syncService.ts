@@ -43,8 +43,9 @@ export class SyncService {
       return { success: true, message: 'Sync completed successfully' };
     } catch (error) {
       console.error('Sync failed:', error);
-      this.notifyListeners({ status: 'error', progress: 0, error: error.message });
-      return { success: false, message: error.message || 'Sync failed' };
+      const errorMessage = error instanceof Error ? error.message : 'Sync failed';
+      this.notifyListeners({ status: 'error', progress: 0, error: errorMessage });
+      return { success: false, message: errorMessage };
     } finally {
       this.isSyncing = false;
     }
@@ -165,6 +166,22 @@ export class SyncService {
         this.syncListeners.splice(index, 1);
       }
     };
+  }
+
+  static addListener(listener: (status: SyncStatus) => void): () => void {
+    this.syncListeners.push(listener);
+    
+    // Return unsubscribe function
+    return () => {
+      const index = this.syncListeners.indexOf(listener);
+      if (index > -1) {
+        this.syncListeners.splice(index, 1);
+      }
+    };
+  }
+
+  static removeAllListeners(): void {
+    this.syncListeners = [];
   }
 
   private static notifyListeners(status: SyncStatus): void {

@@ -45,7 +45,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
   const getGradientColors = (): [string, string] => {
     switch (variant) {
       case 'secondary':
-        return [theme.colors.secondary, theme.colors.secondaryLight];
+        return [theme.colors.accent, theme.colors.accentLight];
       default:
         return [theme.colors.primary, theme.colors.primaryDark];
     }
