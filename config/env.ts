@@ -13,7 +13,7 @@ const developmentConfig: AppConfig = {
 };
 
 const productionConfig: AppConfig = {
-  API_BASE_URL: 'https://expense-tracker-backend.onrender.com/api', // Your Render backend URL
+  API_BASE_URL: 'https://broku-backend.onrender.com/api', // Your Render backend URL
   ENVIRONMENT: 'production',
 };
 
