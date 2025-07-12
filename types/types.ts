@@ -5,6 +5,7 @@ export interface Expense {
   date: string;
   note: string;
   type: 'income' | 'expense';
+  paymentMethod?: 'cash' | 'card' | 'digital' | 'other';
   createdAt: string;
   updatedAt: string;
 }
@@ -22,6 +23,7 @@ export interface ExpenseFormData {
   date: Date;
   note: string;
   type?: 'income' | 'expense';
+  paymentMethod?: 'cash' | 'card' | 'digital' | 'other';
 }
 
 export interface ApiResponse<T> {
@@ -96,6 +98,29 @@ export interface InsightsData {
   recentHighExpense?: Expense;
 }
 
+export interface CashTransaction {
+  _id: string;
+  type: 'add' | 'spend' | 'withdraw';
+  amount: number;
+  description: string;
+  date: string;
+  relatedExpenseId?: string;
+}
+
+export interface CashWallet {
+  _id: string;
+  totalCash: number;
+  transactions: CashTransaction[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CashWalletFormData {
+  amount: string;
+  description: string;
+  type: 'add' | 'spend' | 'withdraw';
+}
+
 export type RootStackParamList = {
   Home: undefined;
   AddExpense: undefined;
@@ -105,5 +130,9 @@ export type RootStackParamList = {
   Summary: undefined;
   Analytics: undefined;
   Insights: undefined;
+  AIInsights: undefined;
   Main: undefined;
+  CashWallet: undefined;
+  AddCash: undefined;
+  SpendCash: undefined;
 };

@@ -8,12 +8,12 @@ interface AppConfig {
 const isDevelopment = __DEV__;
 
 const developmentConfig: AppConfig = {
-  API_BASE_URL: 'http://192.168.1.32:5000/api', // Local development - use computer's IP
+  API_BASE_URL: 'http://192.168.0.206:5000/api', // Local development - use computer's current IP
   ENVIRONMENT: 'development',
 };
 
 const productionConfig: AppConfig = {
-  API_BASE_URL: 'https://broku-backend.onrender.com/api', // Your Render backend URL
+  API_BASE_URL: 'https://broku-backend.onrender.com/api', // Update this with your actual production backend URL
   ENVIRONMENT: 'production',
 };
 

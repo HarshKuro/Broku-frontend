@@ -8,15 +8,16 @@ import {
   Alert,
   TextInput,
   TouchableOpacity,
-  SafeAreaView,
   StatusBar,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Card, FAB } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList, Expense } from '../types/types';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { RootStackParamList, Expense, CashTransaction, CashWallet } from '../types/types';
 import { offlineExpenseApi as expenseApi } from '../services/offlineApi';
+import { cashWalletApi } from '../api/cashWalletApi';
 import ExpenseCard from '../components/ExpenseCard';
 import { formatCurrency } from '../utils/currency';
 import { useTheme, useThemedStyles } from '../constants/ThemeProvider';
@@ -32,12 +33,15 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
   const themedStyles = useThemedStyles();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [filteredExpenses, setFilteredExpenses] = useState<Expense[]>([]);
+  const [cashTransactions, setCashTransactions] = useState<CashTransaction[]>([]);
+  const [filteredCashTransactions, setFilteredCashTransactions] = useState<CashTransaction[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filterMonth, setFilterMonth] = useState<number | null>(null);
   const [filterYear, setFilterYear] = useState<number | null>(null);
-  const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'income' | 'expense' | 'cash'>('all');
+  const [showCashTransactions, setShowCashTransactions] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -51,6 +55,16 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
       const fetchedExpenses = await expenseApi.getAll();
       setExpenses(fetchedExpenses);
       setFilteredExpenses(fetchedExpenses);
+      
+      // Fetch cash transactions
+      const cashResponse = await cashWalletApi.getCashTransactions(100, 0);
+      if (cashResponse.success && cashResponse.data) {
+        setCashTransactions(cashResponse.data.transactions);
+        setFilteredCashTransactions(cashResponse.data.transactions);
+      } else {
+        setCashTransactions([]);
+        setFilteredCashTransactions([]);
+      }
     } catch (error) {
       console.error('Error fetching expenses:', error);
       Alert.alert('Error', 'Failed to fetch expenses. Please try again.');
@@ -112,12 +126,59 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    filterExpenses(expenses, query);
+    
+    if (showCashTransactions) {
+      // Filter cash transactions
+      let filteredCash = cashTransactions;
+      
+      if (query) {
+        filteredCash = filteredCash.filter(transaction =>
+          transaction.description.toLowerCase().includes(query.toLowerCase())
+        );
+      }
+      
+      if (filterMonth && filterYear) {
+        filteredCash = filteredCash.filter(transaction => {
+          const transactionDate = new Date(transaction.date);
+          return transactionDate.getMonth() + 1 === filterMonth && 
+                 transactionDate.getFullYear() === filterYear;
+        });
+      }
+      
+      setFilteredCashTransactions(filteredCash);
+    } else {
+      // Filter regular expenses
+      filterExpenses(expenses, query);
+    }
   };
 
-  const handleTypeFilter = (type: 'all' | 'income' | 'expense') => {
+  const handleTypeFilter = (type: 'all' | 'income' | 'expense' | 'cash') => {
     setFilterType(type);
-    // Re-filter with new type
+    setShowCashTransactions(type === 'cash');
+    
+    if (type === 'cash') {
+      // Filter cash transactions
+      let filteredCash = cashTransactions;
+      
+      if (searchQuery) {
+        filteredCash = filteredCash.filter(transaction =>
+          transaction.description.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      }
+      
+      if (filterMonth && filterYear) {
+        filteredCash = filteredCash.filter(transaction => {
+          const transactionDate = new Date(transaction.date);
+          return transactionDate.getMonth() + 1 === filterMonth && 
+                 transactionDate.getFullYear() === filterYear;
+        });
+      }
+      
+      setFilteredCashTransactions(filteredCash);
+      return;
+    }
+    
+    // Re-filter regular expenses with new type
     let filtered = expenses;
 
     // Apply search filter
@@ -175,6 +236,22 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const getTotalAmount = () => {
+    if (showCashTransactions) {
+      const cashAdded = filteredCashTransactions
+        .filter(t => t.type === 'add')
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      const cashSpent = filteredCashTransactions
+        .filter(t => t.type === 'spend' || t.type === 'withdraw')
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      return {
+        income: cashAdded,
+        expenses: cashSpent,
+        net: cashAdded - cashSpent
+      };
+    }
+    
     const totalIncome = filteredExpenses
       .filter(item => item.type === 'income')
       .reduce((sum, item) => sum + item.amount, 0);
@@ -362,10 +439,108 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
       shadowOpacity: 0.2,
       shadowRadius: 4,
     },
+    cashTransactionCard: {
+      backgroundColor: colors.surface,
+      marginHorizontal: 20,
+      marginVertical: 6,
+      borderRadius: 12,
+      padding: 16,
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    },
+    cashTransactionContent: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    cashTransactionLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+    },
+    cashTransactionIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 12,
+    },
+    cashTransactionDetails: {
+      flex: 1,
+    },
+    cashTransactionDescription: {
+      fontSize: 16,
+      fontWeight: '600',
+      marginBottom: 4,
+    },
+    cashTransactionDate: {
+      fontSize: 14,
+    },
+    cashTransactionRight: {
+      alignItems: 'flex-end',
+    },
+    cashTransactionAmount: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginBottom: 2,
+    },
+    cashTransactionType: {
+      fontSize: 12,
+      textTransform: 'uppercase',
+      fontWeight: '500',
+    },
   });
 
   const renderExpenseItem = ({ item }: { item: Expense }) => (
     <ExpenseCard expense={item} onDelete={handleDeleteExpense} />
+  );
+  
+  const renderCashTransactionItem = ({ item }: { item: CashTransaction }) => (
+    <View style={[styles.cashTransactionCard, { backgroundColor: colors.surface }]}>
+      <View style={styles.cashTransactionContent}>
+        <View style={styles.cashTransactionLeft}>
+          <View style={[
+            styles.cashTransactionIcon,
+            { backgroundColor: item.type === 'add' ? colors.success + '20' : colors.error + '20' }
+          ]}>
+            <Ionicons 
+              name={item.type === 'add' ? 'add-circle' : item.type === 'spend' ? 'cart' : 'remove-circle'} 
+              size={24} 
+              color={item.type === 'add' ? colors.success : colors.error} 
+            />
+          </View>
+          <View style={styles.cashTransactionDetails}>
+            <Text style={[styles.cashTransactionDescription, { color: colors.text.primary }]}>
+              {item.description}
+            </Text>
+            <Text style={[styles.cashTransactionDate, { color: colors.text.secondary }]}>
+              {new Date(item.date).toLocaleDateString('en-IN', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.cashTransactionRight}>
+          <Text style={[
+            styles.cashTransactionAmount,
+            { color: item.type === 'add' ? colors.success : colors.error }
+          ]}>
+            {item.type === 'add' ? '+' : '-'}₹{item.amount.toLocaleString()}
+          </Text>
+          <Text style={[styles.cashTransactionType, { color: colors.text.secondary }]}>
+            {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+          </Text>
+        </View>
+      </View>
+    </View>
   );
 
   const renderHeader = () => (
@@ -462,6 +637,20 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
             Expenses
           </Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.filterButton,
+            filterType === 'cash' ? { backgroundColor: colors.warning } : { backgroundColor: colors.surface }
+          ]}
+          onPress={() => handleTypeFilter('cash')}
+        >
+          <Text style={[
+            styles.filterButtonText,
+            { color: filterType === 'cash' ? '#FFFFFF' : colors.text.primary }
+          ]}>
+            Cash
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Summary Card */}
@@ -470,7 +659,7 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
           <View>
             <Text style={styles.summaryLabel}>Period: {getFilterText()}</Text>
             <Text style={styles.summaryLabel}>
-              {filteredExpenses.length} transaction{filteredExpenses.length !== 1 ? 's' : ''}
+              {showCashTransactions ? filteredCashTransactions.length : filteredExpenses.length} transaction{(showCashTransactions ? filteredCashTransactions.length : filteredExpenses.length) !== 1 ? 's' : ''}
             </Text>
           </View>
           <View style={styles.summaryRight}>
@@ -499,15 +688,22 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Text style={styles.emptyText}>
-        {searchQuery || filterMonth ? 'No expenses found' : 'No expenses yet'}
-      </Text>
-      <Text style={styles.emptySubtext}>
-        {searchQuery || filterMonth 
-          ? 'Try adjusting your search or filters'
-          : 'Tap the + button to add your first expense'
+        {showCashTransactions 
+          ? (searchQuery || filterMonth ? 'No cash transactions found' : 'No cash transactions yet')
+          : (searchQuery || filterMonth ? 'No expenses found' : 'No expenses yet')
         }
       </Text>
-      {!searchQuery && !filterMonth && (
+      <Text style={styles.emptySubtext}>
+        {showCashTransactions
+          ? (searchQuery || filterMonth 
+              ? 'Try adjusting your search or filters'
+              : 'Add some cash to your wallet to start tracking')
+          : (searchQuery || filterMonth 
+              ? 'Try adjusting your search or filters'
+              : 'Tap the + button to add your first expense')
+        }
+      </Text>
+      {!searchQuery && !filterMonth && !showCashTransactions && (
         <TouchableOpacity
           style={[styles.emptyButton, { backgroundColor: colors.primary }]}
           onPress={() => navigation.navigate('AddExpense')}
@@ -515,11 +711,19 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.emptyButtonText}>Add Expense</Text>
         </TouchableOpacity>
       )}
+      {!searchQuery && !filterMonth && showCashTransactions && (
+        <TouchableOpacity
+          style={[styles.emptyButton, { backgroundColor: colors.success }]}
+          onPress={() => navigation.navigate('CashWallet')}
+        >
+          <Text style={styles.emptyButtonText}>Go to Cash Wallet</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="dark-content" translucent={false} />
       
       {/* Modern Header */}
@@ -530,18 +734,33 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={filteredExpenses}
-        renderItem={renderExpenseItem}
-        keyExtractor={(item) => item._id}
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={renderEmptyState}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+      {showCashTransactions ? (
+        <FlatList
+          data={filteredCashTransactions}
+          renderItem={renderCashTransactionItem}
+          keyExtractor={(item) => item._id}
+          ListHeaderComponent={renderHeader}
+          ListEmptyComponent={renderEmptyState}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        />
+      ) : (
+        <FlatList
+          data={filteredExpenses}
+          renderItem={renderExpenseItem}
+          keyExtractor={(item) => item._id}
+          ListHeaderComponent={renderHeader}
+          ListEmptyComponent={renderEmptyState}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
 
       {/* Floating Action Button */}
       <FAB

@@ -4,12 +4,14 @@ import { PieChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import SmartSummaryCard from '../components/SmartSummaryCard';
 import InsightCard from '../components/InsightCard';
 import { BarChart } from '../components/GraphComponent';
 import { expenseApi } from '../api/expenseApi';
+import { cashWalletApi } from '../api/cashWalletApi';
 import { useTheme } from '../constants/ThemeProvider';
-import { AnalyticsData, InsightsData, RootStackParamList } from '../types/types';
+import { AnalyticsData, InsightsData, RootStackParamList, CashWallet, CashTransaction } from '../types/types';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -25,6 +27,9 @@ const AnalyticsScreen: React.FC = () => {
   const [pieData, setPieData] = useState<any[]>([]);
   const [barData, setBarData] = useState<any[]>([]);
   const [insights, setInsights] = useState<any[]>([]);
+  const [cashWallet, setCashWallet] = useState<CashWallet | null>(null);
+  const [cashTransactions, setCashTransactions] = useState<CashTransaction[]>([]);
+  const [paymentMethodData, setPaymentMethodData] = useState<any[]>([]);
 
   useEffect(() => {
     fetchAnalytics();
@@ -36,6 +41,18 @@ const AnalyticsScreen: React.FC = () => {
       // Fetch analytics data from the new API endpoint
       const analyticsData = await expenseApi.getAnalytics(filter);
       const insightsData = await expenseApi.getInsights();
+      
+      // Fetch cash wallet data
+      const walletResponse = await cashWalletApi.getCashWallet();
+      if (walletResponse.success && walletResponse.data) {
+        setCashWallet(walletResponse.data);
+      }
+      
+      // Fetch cash transactions
+      const cashTransactionsResponse = await cashWalletApi.getCashTransactions(50, 0);
+      if (cashTransactionsResponse.success && cashTransactionsResponse.data) {
+        setCashTransactions(cashTransactionsResponse.data.transactions);
+      }
       
       // Set income and expense from real data
       setIncome(analyticsData.summary.income);
@@ -52,8 +69,29 @@ const AnalyticsScreen: React.FC = () => {
       }));
       setPieData(pie);
       
-      // Prepare bar chart data from time breakdown
+      // Prepare payment method analytics
+      const paymentMethods = ['cash', 'card', 'digital', 'other'];
+      const paymentData = paymentMethods.map((method, idx) => {
+        const methodExpenses = analyticsData.expensesByCategory.reduce((total, cat) => {
+          // For now, we'll simulate payment method data
+          // In a real implementation, you'd get this from the backend
+          return total + (cat.totalAmount * (method === 'cash' ? 0.3 : method === 'card' ? 0.4 : method === 'digital' ? 0.25 : 0.05));
+        }, 0);
+        
+        return {
+          name: method.charAt(0).toUpperCase() + method.slice(1),
+          population: Math.round(methodExpenses),
+          color: palette[idx + 4],
+          legendFontColor: colors.text.primary,
+          legendFontSize: 12,
+        };
+      }).filter(item => item.population > 0);
+      setPaymentMethodData(paymentData);
+      
+      // Prepare bar chart data from time breakdown including cash transactions
       const timeMap: { [period: string]: { income: number; expense: number } } = {};
+      
+      // Add regular expense/income data
       analyticsData.timeBreakdown.forEach(item => {
         const date = new Date(item._id.date);
         let period: string;
@@ -73,8 +111,53 @@ const AnalyticsScreen: React.FC = () => {
         }
       });
       
-      const bar = Object.entries(timeMap).map(([label, v]) => ({ label, ...v }));
-      setBarData(bar);
+      // Add cash transactions to the time breakdown
+      cashTransactions.forEach(transaction => {
+        const date = new Date(transaction.date);
+        let period: string;
+        
+        if (filter === 'week') {
+          period = date.toLocaleDateString('en-US', { weekday: 'short' });
+        } else {
+          period = `${date.getDate()}/${date.getMonth() + 1}`;
+        }
+        
+        if (!timeMap[period]) timeMap[period] = { income: 0, expense: 0 };
+        
+        if (transaction.type === 'add') {
+          timeMap[period].income += transaction.amount;
+        } else if (transaction.type === 'spend') {
+          timeMap[period].expense += transaction.amount;
+        }
+      });
+      
+      // Sort periods chronologically and prepare final bar data
+      const sortedPeriods = Object.entries(timeMap).sort(([a], [b]) => {
+        if (filter === 'week') {
+          const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+          return days.indexOf(a) - days.indexOf(b);
+        } else {
+          const [dayA, monthA] = a.split('/').map(Number);
+          const [dayB, monthB] = b.split('/').map(Number);
+          return (monthA - monthB) || (dayA - dayB);
+        }
+      });
+      
+      // Ensure bar data is properly structured with default values
+      const bar = sortedPeriods.map(([label, v]) => ({
+        label: label || 'Unknown',
+        income: Math.max(0, v?.income || 0),
+        expense: Math.max(0, v?.expense || 0)
+      })).filter(item => item.label && item.label !== 'Unknown');
+      
+      // Only set bar data if we have valid data
+      if (bar.length > 0) {
+        console.log('Setting bar data:', bar);
+        setBarData(bar);
+      } else {
+        console.log('No valid bar data, setting empty array');
+        setBarData([]);
+      }
       
       // Generate smart insights from real data
       const savings = analyticsData.summary.balance;
@@ -178,6 +261,36 @@ const AnalyticsScreen: React.FC = () => {
         });
       }
       
+      // Cash wallet insights
+      if (cashWallet && cashWallet.totalCash > 0) {
+        newInsights.push({
+          icon: 'wallet',
+          message: `Cash on hand: ₹${cashWallet.totalCash.toLocaleString()}`,
+          color: '#22C55E'
+        });
+      }
+      
+      // Cash transaction insights
+      if (cashTransactions.length > 0) {
+        const thisMonthCashSpent = cashTransactions
+          .filter(t => {
+            const transactionDate = new Date(t.date);
+            const now = new Date();
+            return t.type === 'spend' && 
+                   transactionDate.getMonth() === now.getMonth() && 
+                   transactionDate.getFullYear() === now.getFullYear();
+          })
+          .reduce((sum, t) => sum + t.amount, 0);
+          
+        if (thisMonthCashSpent > 2000) {
+          newInsights.push({
+            icon: 'cash',
+            message: `Cash spending this month: ₹${thisMonthCashSpent.toLocaleString()}`,
+            color: '#FFA657'
+          });
+        }
+      }
+      
       // Ensure we have at least a few meaningful insights
       if (newInsights.length === 0) {
         newInsights.push({
@@ -191,16 +304,19 @@ const AnalyticsScreen: React.FC = () => {
       
     } catch (e) {
       console.error('Analytics fetch error:', e);
-      // Fallback to demo data if API fails
-      setIncome(filter === 'week' ? 12000 : filter === 'month' ? 50000 : 48000);
-      setExpense(filter === 'week' ? 8000 : filter === 'month' ? 32000 : 28000);
+      // Set safe fallback values
+      setIncome(0);
+      setExpense(0);
       setPieData([]);
       setBarData([]);
+      setPaymentMethodData([]);
+      setCashWallet(null);
+      setCashTransactions([]);
       setInsights([
-        { 
-          icon: 'alert-circle', 
-          message: 'Unable to load real data. Please check your connection.', 
-          color: '#EF4444' 
+        {
+          icon: 'information-circle-outline',
+          message: 'Unable to load analytics data. Please try again.',
+          color: '#EF4444'
         }
       ]);
     } finally {
@@ -209,8 +325,9 @@ const AnalyticsScreen: React.FC = () => {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.content}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.content}>
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.primary} />
@@ -232,6 +349,36 @@ const AnalyticsScreen: React.FC = () => {
 
             {/* Smart Summary Card */}
             <SmartSummaryCard income={income} expense={expense} />
+
+            {/* Cash Wallet Summary */}
+            {cashWallet && (
+              <View style={[styles.chartContainer, { backgroundColor: colors.surface }]}>
+                <View style={styles.chartHeader}>
+                  <Ionicons name="wallet" size={20} color={colors.primary} />
+                  <Text style={[styles.chartTitle, { color: colors.text.primary }]}>
+                    Cash Wallet
+                  </Text>
+                </View>
+                <View style={styles.cashSummary}>
+                  <View style={styles.cashItem}>
+                    <Text style={[styles.cashLabel, { color: colors.text.secondary }]}>
+                      Available Cash
+                    </Text>
+                    <Text style={[styles.cashAmount, { color: colors.success }]}>
+                      ₹{cashWallet.totalCash.toLocaleString()}
+                    </Text>
+                  </View>
+                  <View style={styles.cashItem}>
+                    <Text style={[styles.cashLabel, { color: colors.text.secondary }]}>
+                      Total Transactions
+                    </Text>
+                    <Text style={[styles.cashCount, { color: colors.text.primary }]}>
+                      {cashTransactions.length}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
 
             {/* Filter Dropdown */}
             <View style={styles.filterContainer}>
@@ -263,6 +410,35 @@ const AnalyticsScreen: React.FC = () => {
                 ))}
               </View>
             </View>
+
+            {/* Payment Method Chart */}
+            {paymentMethodData.length > 0 && (
+              <View style={[styles.chartContainer, { backgroundColor: colors.surface }]}>
+                <View style={styles.chartHeader}>
+                  <Ionicons name="card" size={20} color={colors.primary} />
+                  <Text style={[styles.chartTitle, { color: colors.text.primary }]}>
+                    Payment Methods
+                  </Text>
+                </View>
+                <PieChart
+                  data={paymentMethodData}
+                  width={screenWidth - 64}
+                  height={180}
+                  chartConfig={{
+                    color: (opacity = 1) => colors.primary,
+                    labelColor: () => colors.text.primary,
+                    propsForLabels: {
+                      fontSize: 12,
+                      fontWeight: '500'
+                    }
+                  }}
+                  accessor="population"
+                  backgroundColor="transparent"
+                  paddingLeft="15"
+                  absolute
+                />
+              </View>
+            )}
 
             {/* Charts Section */}
             {pieData.length > 0 && (
@@ -328,6 +504,7 @@ const AnalyticsScreen: React.FC = () => {
         )}
       </View>
     </ScrollView>
+    </SafeAreaView>
   );
 };
 
@@ -417,6 +594,25 @@ const styles = StyleSheet.create({
   },
   insightsContainer: {
     marginBottom: 20,
+  },
+  cashSummary: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  cashItem: {
+    alignItems: 'center',
+  },
+  cashLabel: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  cashAmount: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  cashCount: {
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
 

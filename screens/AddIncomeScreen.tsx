@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Switch, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../constants/ThemeProvider';
 import { expenseApi } from '../api/expenseApi';
 
@@ -14,6 +15,7 @@ const AddIncomeScreen: React.FC = () => {
     note: '',
     recurring: false,
     showDatePicker: false,
+    paymentMethod: 'cash' as 'cash' | 'card' | 'digital' | 'other',
   });
 
   const onChange = (field: string, value: any) => {
@@ -38,6 +40,7 @@ const AddIncomeScreen: React.FC = () => {
         date: state.date,
         note: state.note || '',
         type: 'income' as const,
+        paymentMethod: state.paymentMethod,
       };
 
       await expenseApi.create(incomeData);
@@ -50,6 +53,7 @@ const AddIncomeScreen: React.FC = () => {
             note: '',
             recurring: false,
             showDatePicker: false,
+            paymentMethod: 'cash',
           });
         }}
       ]);
@@ -60,8 +64,9 @@ const AddIncomeScreen: React.FC = () => {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.content}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
           <View style={[styles.iconContainer, { backgroundColor: colors.success + '20' }]}>
@@ -137,6 +142,37 @@ const AddIncomeScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
+        {/* Payment Method Selection */}
+        <View style={styles.inputContainer}>
+          <Text style={[styles.label, { color: colors.text.primary }]}>Payment Method</Text>
+          <View style={styles.paymentMethodContainer}>
+            {(['cash', 'card', 'digital', 'other'] as const).map((method) => (
+              <TouchableOpacity
+                key={method}
+                style={[
+                  styles.paymentMethodButton,
+                  {
+                    backgroundColor: state.paymentMethod === method ? colors.primary : colors.surface,
+                    borderColor: state.paymentMethod === method ? colors.primary : colors.border,
+                  }
+                ]}
+                onPress={() => onChange('paymentMethod', method)}
+              >
+                <Text
+                  style={[
+                    styles.paymentMethodText,
+                    {
+                      color: state.paymentMethod === method ? colors.surface : colors.text.primary,
+                    }
+                  ]}
+                >
+                  {method.charAt(0).toUpperCase() + method.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
         {/* Note Input */}
         <View style={styles.inputContainer}>
           <Text style={[styles.label, { color: colors.text.primary }]}>Note (Optional)</Text>
@@ -204,6 +240,7 @@ const AddIncomeScreen: React.FC = () => {
         />
       )}
     </ScrollView>
+    </SafeAreaView>
   );
 };
 
@@ -336,6 +373,23 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginLeft: 8,
+  },
+  paymentMethodContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  paymentMethodButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  paymentMethodText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
 

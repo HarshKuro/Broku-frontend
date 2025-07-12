@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { Provider as PaperProvider } from 'react-native-paper';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-gesture-handler';
 import Navigation from './navigation';
 import { ThemeProvider, useTheme } from './constants/ThemeProvider';
@@ -39,20 +40,24 @@ const AppContent = () => {
   };
 
   return (
-    <PaperProvider theme={paperTheme}>
-      <Navigation />
-      <StatusBar 
-        style={isDark ? "light" : "dark"} 
-        backgroundColor={colors.background} 
-      />
-    </PaperProvider>
+    <SafeAreaProvider>
+      <PaperProvider theme={paperTheme}>
+        <Navigation />
+        <StatusBar 
+          style={isDark ? "light" : "dark"} 
+          translucent={false}
+        />
+      </PaperProvider>
+    </SafeAreaProvider>
   );
 };
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <AppContent />
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }

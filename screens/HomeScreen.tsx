@@ -12,13 +12,16 @@ import { useFocusEffect } from '@react-navigation/native';
 import { FAB, IconButton } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList, Expense } from '../types/types';
 import { healthCheck } from '../api/expenseApi';
 import { offlineExpenseApi as expenseApi } from '../services/offlineApi';
 import ExpenseCard from '../components/ExpenseCard';
 import SmartSummaryCard from '../components/SmartSummaryCard';
 import InsightCard from '../components/InsightCard';
+import CashWalletCard from '../components/CashWalletCard';
 import InsightCarousel from '../components/InsightCarousel';
+import AIInsightsCard from '../components/AIInsightsCard';
 import { formatCurrency, formatCurrencyCompact } from '../utils/currency';
 import { useTheme, useThemedStyles } from '../constants/ThemeProvider';
 
@@ -468,7 +471,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   });
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.scrollContent}
@@ -488,6 +491,13 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         <View style={[styles.monthlyCard, { backgroundColor: colors.surface }]}> 
           <SmartSummaryCard income={income} expense={expense} />
         </View>
+
+        {/* Cash Wallet Card */}
+        <CashWalletCard onRefresh={fetchHomeData} />
+
+        {/* AI Insights Card */}
+        <AIInsightsCard onViewAll={() => navigation.navigate('AIInsights')} />
+
         {/* Insights Section */}
         <InsightCarousel insights={insights} />
 
@@ -500,7 +510,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         icon="plus"
         onPress={() => navigation.navigate('AddExpense')}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 

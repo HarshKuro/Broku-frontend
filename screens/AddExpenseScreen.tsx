@@ -7,7 +7,6 @@ import {
   Alert,
   TouchableOpacity,
   Platform,
-  SafeAreaView,
   StatusBar,
   Modal,
   Dimensions,
@@ -18,10 +17,12 @@ import {
   Card,
 } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, ExpenseFormData } from '../types/types';
 import { offlineExpenseApi as expenseApi } from '../services/offlineApi';
 import CategorySelector from '../components/CategorySelectorSearch';
+import SmartCategorization from '../components/SmartCategorization';
 import { useTheme, useThemedStyles } from '../constants/ThemeProvider';
 
 type AddExpenseScreenNavigationProp = StackNavigationProp<RootStackParamList, 'AddExpense'>;
@@ -38,6 +39,7 @@ const AddExpenseScreen: React.FC<Props> = ({ navigation }) => {
     amount: '',
     date: new Date(),
     note: '',
+    paymentMethod: 'other',
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
@@ -78,6 +80,8 @@ const AddExpenseScreen: React.FC<Props> = ({ navigation }) => {
         amount,
         date: formData.date,
         note: formData.note,
+        type: 'expense',
+        paymentMethod: formData.paymentMethod,
       });
 
       Alert.alert(
@@ -342,10 +346,28 @@ const AddExpenseScreen: React.FC<Props> = ({ navigation }) => {
       fontSize: 12,
       marginTop: 8,
     },
+    paymentMethodContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 12,
+      marginTop: 8,
+    },
+    paymentMethodButton: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+      borderWidth: 1,
+      minWidth: 80,
+      alignItems: 'center',
+    },
+    paymentMethodText: {
+      fontSize: 14,
+      fontWeight: '500',
+    },
   });
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
       <StatusBar barStyle="dark-content" translucent={false} />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -375,6 +397,46 @@ const AddExpenseScreen: React.FC<Props> = ({ navigation }) => {
           {errors.amount ? (
             <Text style={[styles.errorText, { color: colors.error }]}>{errors.amount}</Text>
           ) : null}
+        </View>
+
+        {/* Payment Method Selection */}
+        <View style={[styles.inputSection, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Payment Method</Text>
+          <View style={styles.paymentMethodContainer}>
+            {[
+              { key: 'cash', label: '💵 Cash', icon: 'wallet' },
+              { key: 'card', label: '💳 Card', icon: 'card' },
+              { key: 'digital', label: '📱 Digital', icon: 'phone-portrait' },
+              { key: 'other', label: '🏦 Other', icon: 'business' }
+            ].map((method) => (
+              <TouchableOpacity
+                key={method.key}
+                style={[
+                  styles.paymentMethodButton,
+                  {
+                    backgroundColor: formData.paymentMethod === method.key 
+                      ? colors.primary 
+                      : colors.surfaceVariant,
+                    borderColor: formData.paymentMethod === method.key 
+                      ? colors.primary 
+                      : colors.border
+                  }
+                ]}
+                onPress={() => setFormData(prev => ({ ...prev, paymentMethod: method.key as any }))}
+              >
+                <Text style={[
+                  styles.paymentMethodText,
+                  { 
+                    color: formData.paymentMethod === method.key 
+                      ? colors.surface 
+                      : colors.text.primary 
+                  }
+                ]}>
+                  {method.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
         {/* Category Selection */}
@@ -423,6 +485,18 @@ const AddExpenseScreen: React.FC<Props> = ({ navigation }) => {
             placeholderTextColor={colors.text.disabled}
           />
         </View>
+
+        {/* AI Smart Categorization */}
+        {formData.note.trim() && formData.amount && parseFloat(formData.amount) > 0 && (
+          <SmartCategorization
+            description={formData.note}
+            amount={parseFloat(formData.amount)}
+            onCategorySelected={(categoryId, categoryName) => {
+              setFormData(prev => ({ ...prev, category: categoryId }));
+            }}
+            currentCategory={formData.category}
+          />
+        )}
 
         {/* Save Button */}
         <TouchableOpacity
