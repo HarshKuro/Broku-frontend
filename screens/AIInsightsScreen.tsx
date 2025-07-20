@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../constants/ThemeProvider';
 import { theme } from '../constants/theme';
 import GlassCard from '../components/GlassCard';
 import { aiApi, AIInsight, SpendingPattern, BudgetRecommendation, AIOverview } from '../api/aiApi';
@@ -25,6 +26,7 @@ interface AIInsightsScreenProps {
 }
 
 const AIInsightsScreen = ({ navigation }: AIInsightsScreenProps) => {
+  const { colors } = useTheme();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [aiOverview, setAiOverview] = useState<AIOverview | null>(null);
@@ -53,9 +55,49 @@ const AIInsightsScreen = ({ navigation }: AIInsightsScreenProps) => {
         // If we have expenses, use them for AI analysis
         if (expenses && expenses.length > 0) {
           console.log('🤖 Sending expenses to AI for analysis...');
-          const overview = await aiApi.getOverview();
-          console.log('✅ AI Overview with real data:', overview);
-          setAiOverview(overview);
+          
+          // Fetch all AI data in parallel
+          const [overviewResponse, insightsResponse, patternsResponse] = await Promise.allSettled([
+            aiApi.getOverview(),
+            aiApi.getInsights('month'),
+            aiApi.getSpendingPatterns()
+          ]);
+          
+          // Get income from overview for budget recommendations
+          const overviewData = overviewResponse.status === 'fulfilled' ? overviewResponse.value : null;
+          const userIncome = overviewData?.overview?.income || 50000; // Default income if not available
+          
+          // Fetch budget recommendations with income
+          const [budgetResponse] = await Promise.allSettled([
+            aiApi.getBudgetRecommendations(userIncome)
+          ]);
+          
+          console.log('✅ AI responses:', {
+            overview: overviewResponse,
+            insights: insightsResponse,
+            patterns: patternsResponse,
+            budget: budgetResponse
+          });
+          
+          // Build complete AI overview from individual responses
+          const insights = insightsResponse.status === 'fulfilled' ? insightsResponse.value : null;
+          const patterns = patternsResponse.status === 'fulfilled' ? patternsResponse.value : null;
+          const budget = budgetResponse.status === 'fulfilled' ? budgetResponse.value : null;
+          
+          setAiOverview({
+            overview: overviewData?.overview || {
+              income: 0,
+              expenses: 0,
+              savings: 0,
+              savingsRate: 0,
+              transactionCount: expenses.length
+            },
+            insights: insights?.data?.insights || overviewData?.insights || [],
+            patterns: patterns?.data?.patterns || overviewData?.patterns || [],
+            budgetRecommendations: budget?.data?.recommendations || overviewData?.budgetRecommendations || [],
+            aiScore: overviewData?.aiScore || 75,
+            lastUpdated: new Date().toISOString()
+          });
         } else {
           console.log('📝 No expenses found, showing welcome message...');
           // Show welcome message with instructions to add expenses
@@ -208,13 +250,16 @@ const AIInsightsScreen = ({ navigation }: AIInsightsScreenProps) => {
         const response = await aiApi.chatQuery(chatQuery);
         console.log('✅ Chat Response:', response);
         
-        setChatResponse(response.response || 'Sorry, I couldn\'t process your request.');
+        // Handle the response structure {success: true, data: {response: "..."}}
+        const chatResponseText = response.data?.response || response.response || 'Sorry, I couldn\'t process your request.';
+        setChatResponse(chatResponseText);
       } catch (expenseError) {
         console.warn('⚠️ Could not fetch expenses for context, using basic AI:', expenseError);
         
         // Try AI without expense context
         const response = await aiApi.chatQuery(chatQuery);
-        setChatResponse(response.response || 'Sorry, I couldn\'t process your request.');
+        const chatResponseText = response.data?.response || response.response || 'Sorry, I couldn\'t process your request.';
+        setChatResponse(chatResponseText);
       }
       
       setChatQuery('');
@@ -295,7 +340,7 @@ const AIInsightsScreen = ({ navigation }: AIInsightsScreenProps) => {
       <Ionicons
         name={icon as any}
         size={20}
-        color={selectedTab === tab ? theme.colors.primary : theme.colors.text.secondary}
+        color={selectedTab === tab ? colors.primary : colors.text.secondary}
       />
       <Text style={[
         styles.tabText,
@@ -311,7 +356,7 @@ const AIInsightsScreen = ({ navigation }: AIInsightsScreenProps) => {
       {(!aiOverview?.insights || aiOverview.insights.length === 0) ? (
         <GlassCard style={styles.insightCard}>
           <View style={styles.insightHeader}>
-            <Ionicons name="bulb-outline" size={48} color={theme.colors.text.secondary} />
+            <Ionicons name="bulb-outline" size={48} color={colors.text.secondary} />
             <Text style={styles.insightTitle}>No Insights Yet</Text>
           </View>
           <Text style={styles.insightMessage}>
@@ -345,10 +390,10 @@ const AIInsightsScreen = ({ navigation }: AIInsightsScreenProps) => {
       {aiOverview && (
         <GlassCard style={styles.insightCard}>
           <View style={styles.insightHeader}>
-            <Ionicons name="analytics" size={24} color={theme.colors.primary} />
+            <Ionicons name="analytics" size={24} color={colors.primary} />
             <Text style={styles.insightTitle}>AI Financial Score</Text>
           </View>
-          <Text style={[styles.insightMessage, { fontSize: 32, fontWeight: 'bold', color: theme.colors.primary }]}>
+          <Text style={[styles.insightMessage, { fontSize: 32, fontWeight: 'bold', color: colors.primary }]}>
             {aiOverview.aiScore}/100
           </Text>
           <Text style={styles.insightMessage}>
@@ -364,7 +409,7 @@ const AIInsightsScreen = ({ navigation }: AIInsightsScreenProps) => {
       {(!aiOverview?.patterns || aiOverview.patterns.length === 0) ? (
         <GlassCard style={styles.insightCard}>
           <View style={styles.insightHeader}>
-            <Ionicons name="trending-up" size={48} color={theme.colors.text.secondary} />
+            <Ionicons name="trending-up" size={48} color={colors.text.secondary} />
             <Text style={styles.insightTitle}>No Patterns Detected</Text>
           </View>
           <Text style={styles.insightMessage}>
@@ -402,7 +447,7 @@ const AIInsightsScreen = ({ navigation }: AIInsightsScreenProps) => {
       {(!aiOverview?.budgetRecommendations || aiOverview.budgetRecommendations.length === 0) ? (
         <GlassCard style={styles.insightCard}>
           <View style={styles.insightHeader}>
-            <Ionicons name="wallet" size={48} color={theme.colors.text.secondary} />
+            <Ionicons name="wallet" size={48} color={colors.text.secondary} />
             <Text style={styles.insightTitle}>No Budget Recommendations</Text>
           </View>
           <Text style={styles.insightMessage}>
@@ -418,7 +463,7 @@ const AIInsightsScreen = ({ navigation }: AIInsightsScreenProps) => {
                 <Text style={styles.budgetLabel}>Current</Text>
                 <Text style={styles.currentSpending}>₹{budget.currentSpending.toLocaleString()}</Text>
               </View>
-              <Ionicons name="arrow-forward" size={20} color={theme.colors.text.secondary} />
+              <Ionicons name="arrow-forward" size={20} color={colors.text.secondary} />
               <View style={styles.budgetItem}>
                 <Text style={styles.budgetLabel}>Recommended</Text>
                 <Text style={styles.recommendedBudget}>₹{budget.recommendedBudget.toLocaleString()}</Text>
@@ -453,13 +498,13 @@ const AIInsightsScreen = ({ navigation }: AIInsightsScreenProps) => {
             </View>
             <View style={{ width: '45%', marginBottom: 12 }}>
               <Text style={[styles.insightMessage, { fontSize: 12, marginBottom: 4 }]}>Savings</Text>
-              <Text style={[styles.insightTitle, { color: theme.colors.primary, fontSize: 18 }]}>
+              <Text style={[styles.insightTitle, { color: colors.text.primary, fontSize: 18 }]}>
                 ₹{aiOverview.overview.savings.toLocaleString()}
               </Text>
             </View>
             <View style={{ width: '45%', marginBottom: 12 }}>
               <Text style={[styles.insightMessage, { fontSize: 12, marginBottom: 4 }]}>Savings Rate</Text>
-              <Text style={[styles.insightTitle, { color: theme.colors.primary, fontSize: 18 }]}>
+              <Text style={[styles.insightTitle, { color: colors.text.primary, fontSize: 18 }]}>
                 {aiOverview.overview.savingsRate.toFixed(1)}%
               </Text>
             </View>
@@ -474,7 +519,7 @@ const AIInsightsScreen = ({ navigation }: AIInsightsScreenProps) => {
       {/* Always show the AI response card */}
       <GlassCard style={styles.chatResponseCard}>
         <View style={styles.chatResponseHeader}>
-          <Ionicons name="chatbubble-ellipses" size={20} color={theme.colors.primary} />
+          <Ionicons name="chatbubble-ellipses" size={20} color={colors.text.primary} />
           <Text style={styles.chatResponseTitle}>AI Financial Assistant</Text>
         </View>
         <Text style={styles.chatResponseText}>{chatResponse}</Text>
@@ -486,7 +531,7 @@ const AIInsightsScreen = ({ navigation }: AIInsightsScreenProps) => {
           <TextInput
             style={styles.chatInput}
             placeholder="Ask your AI financial assistant..."
-            placeholderTextColor={theme.colors.text.secondary}
+            placeholderTextColor={colors.text.secondary}
             value={chatQuery}
             onChangeText={setChatQuery}
             multiline
@@ -517,10 +562,10 @@ const AIInsightsScreen = ({ navigation }: AIInsightsScreenProps) => {
         ].map((question, index) => (
           <Pressable
             key={index}
-            style={[styles.actionButton, { borderColor: theme.colors.primary }]}
+            style={[styles.actionButton, { borderColor: colors.text.primary }]}
             onPress={() => setChatQuery(question)}
           >
-            <Text style={[styles.actionText, { color: theme.colors.primary }]}>{question}</Text>
+            <Text style={[styles.actionText, { color: colors.text.primary }]}>{question}</Text>
           </Pressable>
         ))}
       </View>
@@ -531,7 +576,7 @@ const AIInsightsScreen = ({ navigation }: AIInsightsScreenProps) => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ActivityIndicator size="large" color={colors.text.primary} />
           <Text style={styles.loadingText}>Loading AI insights...</Text>
         </View>
       </SafeAreaView>
@@ -545,7 +590,7 @@ const AIInsightsScreen = ({ navigation }: AIInsightsScreenProps) => {
         <View style={styles.headerActions}>
           {aiOverview && (
             <View style={styles.aiScore}>
-              <Ionicons name="analytics" size={16} color={theme.colors.primary} />
+              <Ionicons name="analytics" size={16} color={colors.text.primary} />
               <Text style={styles.aiScoreText}>Score: {aiOverview.aiScore}/100</Text>
             </View>
           )}

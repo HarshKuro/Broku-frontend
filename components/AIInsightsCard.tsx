@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../constants/theme';
+import { useTheme } from '../constants/ThemeProvider';
 import GlassCard from './GlassCard';
 import { aiApi, AIInsight } from '../api/aiApi';
 
@@ -10,6 +10,7 @@ interface AIInsightsCardProps {
 }
 
 const AIInsightsCard: React.FC<AIInsightsCardProps> = ({ onViewAll }) => {
+  const { colors } = useTheme();
   const [loading, setLoading] = useState(true);
   const [insights, setInsights] = useState<AIInsight[]>([]);
   const [aiScore, setAiScore] = useState(0);
@@ -97,11 +98,107 @@ const AIInsightsCard: React.FC<AIInsightsCardProps> = ({ onViewAll }) => {
     return 'Needs Work';
   };
 
+  const styles = StyleSheet.create({
+    container: {
+      padding: 16,
+      marginVertical: 8,
+    },
+    loadingContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 20,
+    },
+    loadingText: {
+      marginLeft: 8,
+      fontSize: 14,
+      color: colors.text.secondary,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    titleContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    title: {
+      marginLeft: 8,
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text.primary,
+    },
+    scoreContainer: {
+      alignItems: 'flex-end',
+    },
+    scoreText: {
+      fontSize: 12,
+      fontWeight: '500',
+    },
+    scoreNumber: {
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+    insightsContainer: {
+      marginBottom: 16,
+    },
+    insightItem: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      marginBottom: 12,
+      paddingBottom: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    insightContent: {
+      flex: 1,
+      marginLeft: 12,
+    },
+    insightTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text.primary,
+      marginBottom: 4,
+    },
+    insightMessage: {
+      fontSize: 13,
+      color: colors.text.secondary,
+      lineHeight: 18,
+    },
+    noInsightsContainer: {
+      alignItems: 'center',
+      paddingVertical: 20,
+      marginBottom: 16,
+    },
+    noInsightsText: {
+      marginTop: 8,
+      fontSize: 14,
+      color: colors.text.secondary,
+      textAlign: 'center',
+    },
+    viewAllButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 12,
+      backgroundColor: colors.primary + '10',
+      borderRadius: 8,
+    },
+    viewAllText: {
+      marginRight: 4,
+      fontSize: 14,
+      fontWeight: '500',
+      color: colors.primary,
+    },
+  });
+
   if (loading) {
     return (
       <GlassCard style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color={theme.colors.primary} />
+          <ActivityIndicator size="small" color={colors.primary} />
           <Text style={styles.loadingText}>Loading AI insights...</Text>
         </View>
       </GlassCard>
@@ -112,7 +209,7 @@ const AIInsightsCard: React.FC<AIInsightsCardProps> = ({ onViewAll }) => {
     <GlassCard style={styles.container}>
       <View style={styles.header}>
         <View style={styles.titleContainer}>
-          <Ionicons name="sparkles" size={20} color={theme.colors.primary} />
+          <Ionicons name="sparkles" size={20} color={colors.primary} />
           <Text style={styles.title}>AI Financial Insights</Text>
         </View>
         <View style={styles.scoreContainer}>
@@ -145,113 +242,17 @@ const AIInsightsCard: React.FC<AIInsightsCardProps> = ({ onViewAll }) => {
         </View>
       ) : (
         <View style={styles.noInsightsContainer}>
-          <Ionicons name="analytics" size={32} color={theme.colors.text.secondary} />
+          <Ionicons name="analytics" size={32} color={colors.text.secondary} />
           <Text style={styles.noInsightsText}>Add more expenses to get AI insights!</Text>
         </View>
       )}
 
       <Pressable style={styles.viewAllButton} onPress={onViewAll}>
         <Text style={styles.viewAllText}>View All AI Insights</Text>
-        <Ionicons name="arrow-forward" size={16} color={theme.colors.primary} />
+        <Ionicons name="arrow-forward" size={16} color={colors.primary} />
       </Pressable>
     </GlassCard>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    marginVertical: 8,
-  },
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 20,
-  },
-  loadingText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: theme.colors.text.secondary,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  title: {
-    marginLeft: 8,
-    fontSize: 18,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
-  },
-  scoreContainer: {
-    alignItems: 'flex-end',
-  },
-  scoreText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  scoreNumber: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  insightsContainer: {
-    marginBottom: 16,
-  },
-  insightItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-  },
-  insightContent: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  insightTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
-    marginBottom: 4,
-  },
-  insightMessage: {
-    fontSize: 13,
-    color: theme.colors.text.secondary,
-    lineHeight: 18,
-  },
-  noInsightsContainer: {
-    alignItems: 'center',
-    paddingVertical: 20,
-    marginBottom: 16,
-  },
-  noInsightsText: {
-    marginTop: 8,
-    fontSize: 14,
-    color: theme.colors.text.secondary,
-    textAlign: 'center',
-  },
-  viewAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    backgroundColor: theme.colors.primary + '10',
-    borderRadius: 8,
-  },
-  viewAllText: {
-    marginRight: 4,
-    fontSize: 14,
-    fontWeight: '500',
-    color: theme.colors.primary,
-  },
-});
 
 export default AIInsightsCard;

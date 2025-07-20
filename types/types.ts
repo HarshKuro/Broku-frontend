@@ -135,4 +135,5 @@ export type RootStackParamList = {
   CashWallet: undefined;
   AddCash: undefined;
   SpendCash: undefined;
+  Import: undefined;
 };

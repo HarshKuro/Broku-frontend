@@ -468,6 +468,28 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       flex: 1,
       ...themedStyles.typography.body1,
     },
+    importButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 12,
+      padding: 16,
+      marginHorizontal: 16,
+      marginVertical: 8,
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+    },
+    importButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+      textAlign: 'center',
+      marginBottom: 4,
+    },
+    importButtonSubtext: {
+      fontSize: 12,
+      textAlign: 'center',
+    },
   });
 
   return (
@@ -500,6 +522,21 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* Insights Section */}
         <InsightCarousel insights={insights} />
+
+        {/* Import Section */}
+        <View style={[styles.section, { backgroundColor: colors.background, marginBottom: 10 }]}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Import')}
+            style={[styles.importButton, { backgroundColor: colors.primary }]}
+          >
+            <Text style={[styles.importButtonText, { color: colors.surface }]}>
+              📄 Import Bank Statement (PDF)
+            </Text>
+            <Text style={[styles.importButtonSubtext, { color: colors.surface, opacity: 0.8 }]}>
+              Automatically add transactions from your bank statement
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         {renderRecentExpenses()}
       </ScrollView>

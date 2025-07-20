@@ -21,6 +21,7 @@ import AIInsightsScreen from './screens/AIInsightsScreen';
 import AIDebugScreen from './screens/AIDebugScreen';
 import SimpleNetworkTest from './screens/SimpleNetworkTest';
 import TestAIScreen from './screens/TestAIScreen';
+import ImportScreen from './screens/ImportScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -80,6 +81,7 @@ const Navigation: React.FC = () => {
         <Stack.Screen name="AIDebug" component={AIDebugScreen} />
         <Stack.Screen name="SimpleNetworkTest" component={SimpleNetworkTest} />
         <Stack.Screen name="Summary" component={SummaryScreen} />
+        <Stack.Screen name="Import" component={ImportScreen} />
         <Stack.Screen 
           name="AddCash" 
           component={AddCashScreen}

@@ -54,16 +54,20 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
       setLoading(true);
       const fetchedExpenses = await expenseApi.getAll();
       setExpenses(fetchedExpenses);
-      setFilteredExpenses(fetchedExpenses);
       
       // Fetch cash transactions
       const cashResponse = await cashWalletApi.getCashTransactions(100, 0);
       if (cashResponse.success && cashResponse.data) {
         setCashTransactions(cashResponse.data.transactions);
-        setFilteredCashTransactions(cashResponse.data.transactions);
       } else {
         setCashTransactions([]);
-        setFilteredCashTransactions([]);
+      }
+      
+      // Apply current filters to the new data
+      if (showCashTransactions) {
+        applyCashFilters(cashResponse.success && cashResponse.data ? cashResponse.data.transactions : [], searchQuery);
+      } else {
+        applyAllFilters(fetchedExpenses, searchQuery, filterType);
       }
     } catch (error) {
       console.error('Error fetching expenses:', error);
@@ -85,14 +89,22 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
       // Remove from local state
       const updatedExpenses = expenses.filter(expense => expense._id !== id);
       setExpenses(updatedExpenses);
-      filterExpenses(updatedExpenses, searchQuery);
+      
+      // Reapply current filters to updated data
+      applyAllFilters(updatedExpenses, searchQuery, filterType);
     } catch (error) {
       console.error('Error deleting expense:', error);
       Alert.alert('Error', 'Failed to delete expense. Please try again.');
     }
   };
 
-  const filterExpenses = (expenseList: Expense[], query: string) => {
+  const applyAllFilters = (
+    expenseList: Expense[], 
+    query: string, 
+    type: 'all' | 'income' | 'expense' | 'cash',
+    month: number | null = filterMonth,
+    year: number | null = filterYear
+  ) => {
     let filtered = expenseList;
 
     // Filter by search query (category or note)
@@ -104,102 +116,16 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
     }
 
     // Filter by month/year if set
-    if (filterMonth && filterYear) {
+    if (month && year) {
       filtered = filtered.filter(expense => {
         const expenseDate = new Date(expense.date);
-        return expenseDate.getMonth() + 1 === filterMonth && 
-               expenseDate.getFullYear() === filterYear;
+        return expenseDate.getMonth() + 1 === month && 
+               expenseDate.getFullYear() === year;
       });
     }
 
     // Filter by transaction type
-    if (filterType !== 'all') {
-      if (filterType === 'expense') {
-        filtered = filtered.filter(expense => expense.type === 'expense' || !expense.type);
-      } else {
-        filtered = filtered.filter(expense => expense.type === filterType);
-      }
-    }
-
-    setFilteredExpenses(filtered);
-  };
-
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    
-    if (showCashTransactions) {
-      // Filter cash transactions
-      let filteredCash = cashTransactions;
-      
-      if (query) {
-        filteredCash = filteredCash.filter(transaction =>
-          transaction.description.toLowerCase().includes(query.toLowerCase())
-        );
-      }
-      
-      if (filterMonth && filterYear) {
-        filteredCash = filteredCash.filter(transaction => {
-          const transactionDate = new Date(transaction.date);
-          return transactionDate.getMonth() + 1 === filterMonth && 
-                 transactionDate.getFullYear() === filterYear;
-        });
-      }
-      
-      setFilteredCashTransactions(filteredCash);
-    } else {
-      // Filter regular expenses
-      filterExpenses(expenses, query);
-    }
-  };
-
-  const handleTypeFilter = (type: 'all' | 'income' | 'expense' | 'cash') => {
-    setFilterType(type);
-    setShowCashTransactions(type === 'cash');
-    
-    if (type === 'cash') {
-      // Filter cash transactions
-      let filteredCash = cashTransactions;
-      
-      if (searchQuery) {
-        filteredCash = filteredCash.filter(transaction =>
-          transaction.description.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      }
-      
-      if (filterMonth && filterYear) {
-        filteredCash = filteredCash.filter(transaction => {
-          const transactionDate = new Date(transaction.date);
-          return transactionDate.getMonth() + 1 === filterMonth && 
-                 transactionDate.getFullYear() === filterYear;
-        });
-      }
-      
-      setFilteredCashTransactions(filteredCash);
-      return;
-    }
-    
-    // Re-filter regular expenses with new type
-    let filtered = expenses;
-
-    // Apply search filter
-    if (searchQuery) {
-      filtered = filtered.filter(expense =>
-        expense.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        expense.note.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    // Apply month/year filter
-    if (filterMonth && filterYear) {
-      filtered = filtered.filter(expense => {
-        const expenseDate = new Date(expense.date);
-        return expenseDate.getMonth() + 1 === filterMonth && 
-               expenseDate.getFullYear() === filterYear;
-      });
-    }
-
-    // Apply type filter
-    if (type !== 'all') {
+    if (type !== 'all' && type !== 'cash') {
       if (type === 'expense') {
         filtered = filtered.filter(expense => expense.type === 'expense' || !expense.type);
       } else {
@@ -210,6 +136,56 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
     setFilteredExpenses(filtered);
   };
 
+  const applyCashFilters = (
+    cashList: CashTransaction[],
+    query: string,
+    month: number | null = filterMonth,
+    year: number | null = filterYear
+  ) => {
+    let filtered = cashList;
+    
+    if (query) {
+      filtered = filtered.filter(transaction =>
+        transaction.description.toLowerCase().includes(query.toLowerCase())
+      );
+    }
+    
+    if (month && year) {
+      filtered = filtered.filter(transaction => {
+        const transactionDate = new Date(transaction.date);
+        return transactionDate.getMonth() + 1 === month && 
+               transactionDate.getFullYear() === year;
+      });
+    }
+    
+    setFilteredCashTransactions(filtered);
+  };
+
+  const filterExpenses = (expenseList: Expense[], query: string) => {
+    applyAllFilters(expenseList, query, filterType);
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    
+    if (showCashTransactions) {
+      applyCashFilters(cashTransactions, query);
+    } else {
+      applyAllFilters(expenses, query, filterType);
+    }
+  };
+
+  const handleTypeFilter = (type: 'all' | 'income' | 'expense' | 'cash') => {
+    setFilterType(type);
+    setShowCashTransactions(type === 'cash');
+    
+    if (type === 'cash') {
+      applyCashFilters(cashTransactions, searchQuery);
+    } else {
+      applyAllFilters(expenses, searchQuery, type);
+    }
+  };
+
   const filterByCurrentMonth = () => {
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth() + 1;
@@ -218,13 +194,8 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
     setFilterMonth(currentMonth);
     setFilterYear(currentYear);
     
-    const filtered = expenses.filter(expense => {
-      const expenseDate = new Date(expense.date);
-      return expenseDate.getMonth() + 1 === currentMonth && 
-             expenseDate.getFullYear() === currentYear;
-    });
-    
-    setFilteredExpenses(filtered);
+    // Apply all filters including the new month/year filter
+    applyAllFilters(expenses, searchQuery, filterType, currentMonth, currentYear);
   };
 
   const clearFilters = () => {
@@ -232,7 +203,11 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
     setFilterYear(null);
     setFilterType('all');
     setSearchQuery('');
+    setShowCashTransactions(false);
+    
+    // Reset to original data without any filters
     setFilteredExpenses(expenses);
+    setFilteredCashTransactions(cashTransactions);
   };
 
   const getTotalAmount = () => {

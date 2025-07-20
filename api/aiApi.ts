@@ -67,7 +67,7 @@ export const aiApi = {
   getInsights: async (timeframe: 'week' | 'month' = 'month') => {
     try {
       const response = await api.get(`/ai/insights?timeframe=${timeframe}`);
-      return response.data;
+      return response.data; // Returns {success: true, data: {...}}
     } catch (error) {
       console.error('AI insights error:', error);
       throw error;
@@ -78,7 +78,7 @@ export const aiApi = {
   getSpendingPatterns: async () => {
     try {
       const response = await api.get('/ai/patterns');
-      return response.data;
+      return response.data; // Returns {success: true, data: {...}}
     } catch (error) {
       console.error('AI patterns error:', error);
       throw error;
@@ -90,7 +90,7 @@ export const aiApi = {
     try {
       const url = income ? `/ai/budget-recommendations?income=${income}` : '/ai/budget-recommendations';
       const response = await api.get(url);
-      return response.data;
+      return response.data; // Returns {success: true, data: {...}}
     } catch (error) {
       console.error('AI budget recommendations error:', error);
       throw error;
@@ -101,7 +101,7 @@ export const aiApi = {
   chatQuery: async (query: string) => {
     try {
       const response = await api.post('/ai/chat', { query });
-      return response.data;
+      return response.data; // Returns {success: true, data: {...}}
     } catch (error) {
       console.error('AI chat error:', error);
       throw error;

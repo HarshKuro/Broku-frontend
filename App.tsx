@@ -6,9 +6,13 @@ import 'react-native-gesture-handler';
 import Navigation from './navigation';
 import { ThemeProvider, useTheme } from './constants/ThemeProvider';
 import { OfflineManager } from './services/offlineManager';
+import { useOTAUpdates } from './hooks/useOTAUpdates';
 
 const AppContent = () => {
   const { colors, isDark } = useTheme();
+  
+  // Initialize OTA updates
+  const { updateInfo } = useOTAUpdates();
 
   // Initialize offline functionality
   useEffect(() => {
